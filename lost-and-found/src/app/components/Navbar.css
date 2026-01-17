@@ -1,0 +1,134 @@
+/* ===== RESET (prevents layout bugs) ===== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* ===== NAVBAR ===== */
+.navbar {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+
+  width: 100vw;
+  max-width: 100%;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 0.75rem 2rem;
+
+  background-color: #2f2f2f;
+  color: white;
+
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== LOGO ===== */
+.logo {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+/* ===== NAV LINKS ===== */
+.nav-links {
+  list-style: none;
+
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+
+  margin: 0;
+  padding: 0;
+}
+
+/* ===== DEFAULT LINKS ===== */
+.nav-links a {
+  position: relative;
+
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: white;
+  text-decoration: none;
+
+  padding: 0.25rem 0;
+  transition: color 0.2s ease;
+}
+
+/* Hover underline animation */
+.nav-links a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+
+  width: 0%;
+  height: 2px;
+  background-color: #ffd814;
+
+  transition: width 0.25s ease;
+}
+
+.nav-links a:hover {
+  color: #ffd814;
+}
+
+.nav-links a:hover::after {
+  width: 100%;
+}
+
+/* ===== SIGN UP BUTTON ===== */
+.nav-links .sign-up {
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+
+  background-color: #ffd814;
+  color: #1f1f1f;
+
+  font-weight: 600;
+
+  transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+/* Remove underline animation for button */
+.nav-links .sign-up::after {
+  display: none;
+}
+
+.nav-links .sign-up:hover {
+  background-color: #f5c400;
+  transform: translateY(-1px);
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0.75rem 1.25rem;
+  }
+
+  .nav-links {
+    gap: 1.1rem;
+  }
+
+  .nav-links a {
+    font-size: 0.9rem;
+  }
+
+  .nav-links .sign-up {
+    padding: 0.4rem 0.75rem;
+  }
+}
