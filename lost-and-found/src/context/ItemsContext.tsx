@@ -1,9 +1,7 @@
-// src/context/ItemsContext.tsx
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
 
-// Define what an Item looks like
 export interface Item {
   id: number;
   name: string;
@@ -15,32 +13,16 @@ export interface Item {
 
 interface ItemsContextType {
   items: Item[];
-  addItem: (newItem: Item) => void;
+  addItem: (item: Item) => void;
 }
 
 const ItemsContext = createContext<ItemsContextType | undefined>(undefined);
 
-export function ItemsProvider({ children }: { children: React.ReactNode }) {
-  // We start with your original list here
-  const [items, setItems] = useState<Item[]>([
-    {
-      id: 1,
-      name: "Blue Backpack",
-      description: "Navy blue backpack with leather straps...",
-      image: "https://via.placeholder.com/300x200",
-      authorName: "Admin",
-    },
-    {
-      id: 2,
-      name: "Glasses",
-      description: "Black frame reading glasses...",
-      image: "https://via.placeholder.com/300x200",
-      authorName: "Admin",
-    },
-  ]);
+export const ItemsProvider = ({ children }: { children: ReactNode }) => {
+  const [items, setItems] = useState<Item[]>([]);
 
-  const addItem = (newItem: Item) => {
-    setItems((prev) => [newItem, ...prev]); // Add new item to the top
+  const addItem = (item: Item) => {
+    setItems(prev => [item, ...prev]);
   };
 
   return (
@@ -48,10 +30,10 @@ export function ItemsProvider({ children }: { children: React.ReactNode }) {
       {children}
     </ItemsContext.Provider>
   );
-}
+};
 
-export function useItems() {
+export const useItems = () => {
   const context = useContext(ItemsContext);
-  if (!context) throw new Error("useItems must be used within an ItemsProvider");
+  if (!context) throw new Error("useItems must be used within ItemsProvider");
   return context;
-}
+};
