@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { SignUpButton, UserButton, useUser } from "@clerk/nextjs";
 import { useItems } from "@/context/ItemsContext";
-import { supabase } from "../../lib/supabaseClient"; // relative path
+import { supabase } from "../../lib/supabaseClient";
 import "./Navbar.css";
 
 export default function Navbar() {
@@ -29,42 +29,63 @@ export default function Navbar() {
     setIsUploading(true);
 
     try {
-      // 1. Upload file
+      /* -------------------- 1. Upload image -------------------- */
       const fileName = `${Date.now()}_${selectedFile.name}`;
-      const { data: uploadData, error: uploadError } = await supabase
-        .storage
+
+      const { error: uploadError } = await supabase.storage
         .from("item-images")
         .upload(fileName, selectedFile);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Upload error:", uploadError.message);
+        return;
+      }
 
-      // 2. Get public URL correctly
-      const { data: urlData, error: urlError } = supabase
-        .storage
+      /* -------------------- 2. Get public URL -------------------- */
+      const { data: urlData } = supabase.storage
         .from("item-images")
         .getPublicUrl(fileName);
 
-      if (urlError) throw urlError;
+      const imageUrl = urlData.publicUrl;
 
-      const publicUrl = urlData.publicUrl;
+      /* -------------------- 3. Insert into database -------------------- */
+      const { data: insertedItem, error: insertError } = await supabase
+        .from("items")
+        .insert([
+          {
+            id: Date.now(),
+            name: newItemName,
+            description: newItemDesc,
+            image_url: imageUrl,
+            author_name: user.fullName || user.username || "Anonymous",
+            author_avatar: user.imageUrl,
+          },
+        ])
+        .select()
+        .single();
 
-      // 3. Add item to context
+      if (insertError) {
+        console.error("Insert error:", insertError.message);
+        return;
+      }
+
+      /* -------------------- 4. Update UI instantly -------------------- */
       addItem({
-        id: Date.now(),
-        name: newItemName,
-        description: newItemDesc,
-        image: publicUrl, // <-- this will now show in the app
-        authorName: user.fullName || user.username || "Anonymous",
-        authorAvatar: user.imageUrl,
+        id: insertedItem.id,
+        name: insertedItem.name,
+        description: insertedItem.description,
+        image: insertedItem.image_url,
+        authorName: insertedItem.author_name,
+        authorAvatar: insertedItem.author_avatar,
       });
 
-      // 4. Reset form
+      /* -------------------- 5. Reset -------------------- */
       setNewItemName("");
       setNewItemDesc("");
       setSelectedFile(null);
       setIsModalOpen(false);
     } catch (err) {
-      console.error("Upload failed:", err);
+      console.error("Unexpected error:", err);
     } finally {
       setIsUploading(false);
     }
@@ -74,6 +95,7 @@ export default function Navbar() {
     <>
       <nav className="navbar">
         <h2 className="logo">Lost And Found</h2>
+
         <ul className="nav-links">
           <li><a href="/">Home</a></li>
           <li><a href="/about">About</a></li>
@@ -100,21 +122,23 @@ export default function Navbar() {
         <div className="modal-overlay">
           <div className="modal-content">
             <h3>Report Found Item</h3>
+
             <form onSubmit={handleSubmit}>
               <input
                 type="text"
-                placeholder="Item Name (e.g. Red Scarf)"
+                placeholder="Item Name"
                 value={newItemName}
                 onChange={(e) => setNewItemName(e.target.value)}
                 required
               />
+
               <textarea
-                placeholder="Description (Location, time, etc)"
+                placeholder="Description (location, time, etc)"
                 value={newItemDesc}
                 onChange={(e) => setNewItemDesc(e.target.value)}
                 required
               />
-              <label>Upload Image:</label>
+
               <input
                 type="file"
                 accept="image/*"
@@ -123,8 +147,10 @@ export default function Navbar() {
               />
 
               <div className="modal-actions">
-                <button type="button" onClick={() => setIsModalOpen(false)}>Cancel</button>
-                <button type="submit" className="confirm-btn" disabled={isUploading}>
+                <button type="button" onClick={() => setIsModalOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={isUploading}>
                   {isUploading ? "Uploading..." : "Post Item"}
                 </button>
               </div>
