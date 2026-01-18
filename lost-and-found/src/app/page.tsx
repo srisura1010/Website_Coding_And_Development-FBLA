@@ -75,10 +75,20 @@ function Home() {
 
       <div className="items-container">
         {/* filter() hides items once they are 'claimed' */}
-        {items && items.filter(i => i.status !== 'claimed').map((item) => {
+        {items && items.map((item) => {
+          {item.status === "claimed" && (
+          <span style={{ color: "green", fontWeight: "bold" }}>
+          ✔ Claimed
+          </span>
+          )};
+
           // Safety fallbacks to prevent [object Object] errors
           const currentStatus = item.status || 'waiting';
-          const isOwner = user?.id === item.authorId;
+          const isOwner =
+            user?.id === item.authorId ||
+            user?.primaryEmailAddress?.emailAddress === item.authorId;
+
+          
 
           return (
             <div key={item.id} className="item-card">
