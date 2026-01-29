@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { SignUpButton, UserButton, useUser } from "@clerk/nextjs";
+<<<<<<< HEAD
 import { useItems } from "@/context/ItemsContext";
 import { supabase } from "../../lib/supabaseClient";
 import "./Navbar.css";
@@ -159,5 +159,31 @@ export default function Navbar() {
         </div>
       )}
     </>
+=======
+import "./Navbar.css";
+
+export default function Navbar() {
+  const { isSignedIn } = useUser();
+
+  return (
+    <nav className="navbar">
+      <h2 className="logo">Lost And Found</h2>
+      <ul className="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/about">About</a></li>
+        <li><a href="/contact">Contact</a></li>
+
+        {isSignedIn ? (
+          <li><UserButton /></li> // shows profile dropdown
+        ) : (
+          <li>
+            <SignUpButton>
+              <button className="sign-up">Sign Up</button>
+            </SignUpButton>
+          </li>
+        )}
+      </ul>
+    </nav>
+>>>>>>> parent of 1464164 (added image adding to navbar)
   );
 }
