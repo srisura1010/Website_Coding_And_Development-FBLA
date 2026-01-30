@@ -1,7 +1,7 @@
 "use client";
 
+import { useState } from "react";
 import { SignUpButton, UserButton, useUser } from "@clerk/nextjs";
-<<<<<<< HEAD
 import { useItems } from "@/context/ItemsContext";
 import { supabase } from "../../lib/supabaseClient";
 import "./Navbar.css";
@@ -24,6 +24,7 @@ export default function Navbar() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Added check for primaryEmailAddress to ensure we can notify the creator later
     if (!newItemName || !newItemDesc || !selectedFile || !user) return;
 
     setIsUploading(true);
@@ -49,16 +50,19 @@ export default function Navbar() {
       const imageUrl = urlData.publicUrl;
 
       /* -------------------- 3. Insert into database -------------------- */
+      // Added author_id, author_email, and status for the claim logic
       const { data: insertedItem, error: insertError } = await supabase
         .from("items")
         .insert([
           {
-            id: Date.now(),
             name: newItemName,
             description: newItemDesc,
             image_url: imageUrl,
             author_name: user.fullName || user.username || "Anonymous",
             author_avatar: user.imageUrl,
+            author_id: user.id, // Store Clerk ID to verify owner later
+            author_email: user.primaryEmailAddress?.emailAddress, // Used for email notifications
+            status: 'waiting', // Default status
           },
         ])
         .select()
@@ -77,6 +81,8 @@ export default function Navbar() {
         image: insertedItem.image_url,
         authorName: insertedItem.author_name,
         authorAvatar: insertedItem.author_avatar,
+        status: insertedItem.status, // Pass status to context
+        authorId: insertedItem.author_id,
       });
 
       /* -------------------- 5. Reset -------------------- */
@@ -159,31 +165,5 @@ export default function Navbar() {
         </div>
       )}
     </>
-=======
-import "./Navbar.css";
-
-export default function Navbar() {
-  const { isSignedIn } = useUser();
-
-  return (
-    <nav className="navbar">
-      <h2 className="logo">Lost And Found</h2>
-      <ul className="nav-links">
-        <li><a href="/">Home</a></li>
-        <li><a href="/about">About</a></li>
-        <li><a href="/contact">Contact</a></li>
-
-        {isSignedIn ? (
-          <li><UserButton /></li> // shows profile dropdown
-        ) : (
-          <li>
-            <SignUpButton>
-              <button className="sign-up">Sign Up</button>
-            </SignUpButton>
-          </li>
-        )}
-      </ul>
-    </nav>
->>>>>>> parent of 1464164 (added image adding to navbar)
   );
 }
