@@ -1,6 +1,6 @@
 "use client";
 
-import "./home.css";
+import "@/app/globals.css";
 import { useItems } from "@/context/ItemsContext";
 import { useUser } from "@clerk/nextjs";
 import { supabase } from "../lib/supabaseClient";

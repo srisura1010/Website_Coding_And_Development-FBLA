@@ -11,7 +11,9 @@
   "dependencies": {
     "@clerk/nextjs": "^6.36.8",
     "@emailjs/browser": "^4.4.1",
+    "@supabase/supabase-js": "^2.93.3",
     "next": "^16.1.6",
+    "next-google-translate-widget": "^1.0.1",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
