@@ -83,6 +83,7 @@ export default function Navbar() {
         authorAvatar: insertedItem.author_avatar,
         status: insertedItem.status, // Pass status to context
         authorId: insertedItem.author_id,
+        authorEmail: ""
       });
 
       /* -------------------- 5. Reset -------------------- */
@@ -153,10 +154,10 @@ export default function Navbar() {
               />
 
               <div className="modal-actions">
-                <button type="button" onClick={() => setIsModalOpen(false)}>
+                <button className="button" type="button" onClick={() => setIsModalOpen(false)}>
                   Cancel
                 </button>
-                <button type="submit" disabled={isUploading}>
+                <button className="button" type="submit" disabled={isUploading}>
                   {isUploading ? "Uploading..." : "Post Item"}
                 </button>
               </div>

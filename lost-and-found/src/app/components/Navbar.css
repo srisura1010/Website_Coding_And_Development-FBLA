@@ -132,7 +132,7 @@ body {
     padding: 0.4rem 0.75rem;
   }
 }
-/* Add these to your existing Navbar.css */
+
 .add-btn {
   background-color: #2e7d32;
   color: white;
@@ -153,29 +153,72 @@ body {
   z-index: 1000;
 }
 
+.modal-content textarea {
+  resize: vertical;
+}
+
+
 .modal-content {
   background: white;
   padding: 2rem;
   border-radius: 10px;
-  width: 400px;
+  width: 500px;
+  padding: 2.5rem;
   display: flex;
   flex-direction: column;
   gap: 15px;
   color: black;
+  font-family: 'Inter', sans-serif;
+  border: 1px solid #e0e0e0;
 }
 
-.modal-content input, 
+
+.modal-content h3 {
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin-bottom: 10px;
+}
+
+
+.modal-content input,
 .modal-content textarea {
-  padding: 10px;
+  padding: 12px;
+  font-size: 1rem;
   border: 1px solid #ccc;
   border-radius: 5px;
   width: 100%;
+  min-height: 40px;        /* ensures input & textarea are at least this tall */
 }
+
+.modal-content textarea {
+  min-height: 80px;        /* taller for multi-line text */
+  resize: vertical;
+}
+
+
 
 .modal-actions {
   display: flex;
   justify-content: space-between;
   margin-top: 10px;
+}
+
+.modal-actions .button {
+  background-color: #2e7d32;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+}
+
+.modal-actions .button:hover {
+  background-color: #429346;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
 }
 
 .confirm-btn {
