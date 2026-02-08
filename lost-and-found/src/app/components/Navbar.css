@@ -30,7 +30,7 @@ body {
 
   padding: 0.75rem 2rem;
 
-  background-color: #2f2f2f;
+  background-color: rgb(15, 23, 42);
   color: white;
 
   border-radius: 9999px;
@@ -41,11 +41,23 @@ body {
 
 /* ===== LOGO ===== */
 .logo {
+  text-decoration: none;
   margin: 0;
   font-size: 1.4rem;
+  font-family: Helvetica, sans-serif;
   font-weight: 600;
   letter-spacing: 0.4px;
   white-space: nowrap;
+}
+
+.logo, .logo:visited {
+  text-decoration: none;
+  color: inherit;
+}
+
+.logo:hover {
+  cursor: pointer;
+  color: inherit;
 }
 
 /* ===== NAV LINKS ===== */
@@ -65,9 +77,10 @@ body {
   background: transparent;
   text-decoration: none;
   font-weight: 500;
+  font-size: 0.85rem;
   padding: 0.45rem 0.9rem;
   border: 1px solid rgb(185, 185, 185);
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
@@ -82,17 +95,22 @@ body {
   font-family: "Poppins", sans-serif;
   padding: 0.45rem 0.9rem;
   border-radius: 6px;
-  font-size: 0.95rem;
-  background-color: #ffd814;
-  color: #1f1f1f;
+  font-size: 0.85rem;
+  background-color: #ffd814; /* yellow */
+  color: #1f1f1f; /* dark text */
   font-weight: 600;
-  transition: background-color 0.2s ease, transform 0.15s ease;
+  border: 1px solid #ffd814; /* optional, match background for clean transition */
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
 }
 
 .nav-links .sign-up:hover {
-  background-color: #f5c400;
-  transform: translateY(-1px);
+  background-color: #1f1f1f; /* dark background on hover */
+  color: #ffd814; /* yellow text on hover */
+  transform: translateY(-1px); /* optional slight lift for snappy effect */
 }
+
+
 
 /* ===== ADD ITEM BUTTON ===== */
 .add-btn {

@@ -1,12 +1,14 @@
 "use client";
 
+import "./Navbar.css";
+
 import { SignInButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { SignUpButton, UserButton, useUser } from "@clerk/nextjs";
 import { useItems } from "@/context/ItemsContext";
 import { supabase } from "../../lib/supabaseClient";
-import "./Navbar.css";
+import Link from "next/dist/client/link";
 
 export default function Navbar() {
   const { isSignedIn, user } = useUser();
@@ -105,7 +107,7 @@ export default function Navbar() {
   return (
     <>
       <nav className="navbar">
-        <h2 className="logo">Findr</h2>
+        <Link href="/" className="logo">Findr</Link>
 
         <ul className="nav-links">
           <li>
