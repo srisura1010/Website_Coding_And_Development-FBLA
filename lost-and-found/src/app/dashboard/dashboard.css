@@ -1,0 +1,53 @@
+/* ===== DASHBOARD PAGE ===== */
+.dashboard-page {
+  padding: 2rem;
+}
+
+/* ===== ITEM CARD ===== */
+.item-card {
+  background: white;
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.item-image {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.item-info h3 {
+  margin: 0.5rem 0;
+}
+
+.item-info p {
+  color: #555;
+  font-size: 0.95rem;
+}
+
+/* ===== BUTTONS ===== */
+.retrieve-button {
+  background-color: #2f80ed;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.pending-button {
+  background-color: #ccc;
+  color: #666;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 5px;
+}
+
+.confirm-button {
+  background-color: #2e7d32;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 5px;
+  cursor: pointer;
+}

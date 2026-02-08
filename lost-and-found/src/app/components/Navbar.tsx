@@ -1,5 +1,7 @@
 "use client";
 
+import { SignInButton } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { SignUpButton, UserButton, useUser } from "@clerk/nextjs";
 import { useItems } from "@/context/ItemsContext";
@@ -9,6 +11,8 @@ import "./Navbar.css";
 export default function Navbar() {
   const { isSignedIn, user } = useUser();
   const { addItem } = useItems();
+
+  const router = useRouter();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newItemName, setNewItemName] = useState("");
@@ -62,7 +66,7 @@ export default function Navbar() {
             author_avatar: user.imageUrl,
             author_id: user.id, // Store Clerk ID to verify owner later
             author_email: user.primaryEmailAddress?.emailAddress, // Used for email notifications
-            status: 'waiting', // Default status
+            status: "waiting", // Default status
           },
         ])
         .select()
@@ -83,7 +87,7 @@ export default function Navbar() {
         authorAvatar: insertedItem.author_avatar,
         status: insertedItem.status, // Pass status to context
         authorId: insertedItem.author_id,
-        authorEmail: ""
+        authorEmail: "",
       });
 
       /* -------------------- 5. Reset -------------------- */
@@ -101,19 +105,32 @@ export default function Navbar() {
   return (
     <>
       <nav className="navbar">
-        <h2 className="logo">Lost And Found</h2>
+        <h2 className="logo">Findr</h2>
 
         <ul className="nav-links">
-          <li><a href="/">Home</a></li>
-          <li><a href="/about">About</a></li>
-          <li><a href="/contact">Contact</a></li>
+          <li>
+            {isSignedIn ? (
+              <button
+                className="dashboard-link"
+                onClick={() => router.push("/dashboard")}
+              >
+                Dashboard
+              </button>
+            ) : (
+              <SignInButton mode="modal">
+                <button className="dashboard-link">Dashboard</button>
+              </SignInButton>
+            )}
+          </li>
 
           {isSignedIn ? (
             <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
               <button className="add-btn" onClick={() => setIsModalOpen(true)}>
                 + Add Item
               </button>
-              <li><UserButton /></li>
+              <li>
+                <UserButton />
+              </li>
             </div>
           ) : (
             <li>
@@ -154,7 +171,11 @@ export default function Navbar() {
               />
 
               <div className="modal-actions">
-                <button className="button" type="button" onClick={() => setIsModalOpen(false)}>
+                <button
+                  className="button"
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                >
                   Cancel
                 </button>
                 <button className="button" type="submit" disabled={isUploading}>

@@ -1,25 +1,48 @@
-/* PAGE - FILLS ENTIRE SCREEN */
-.home-page {
-  background-color: #f5f5f5;
-  padding: 3rem 2rem;
-  flex: 1; /* Takes remaining space */
-  color: #111;
-  min-height: 100vh; /* Ensures full viewport height */
-  display: flex;
-  flex-direction: column;
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+
+html, body {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  background-color: #0f172a;
 }
 
-.home-page h1 {
+
+.hero-card {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Poppins', sans-serif;
+  background-color: #ffffff;
+  border: 2px solid #ddd;
+  border-radius: 20px;
+  padding: 2rem 2.5rem;
+  max-width: 600px;
+  margin: 3rem auto;
   text-align: center;
-  margin-bottom: 0.5rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* subtle shadow */
+  font-weight: 200;
 }
 
-.home-page > p {
-  text-align: center;
-  color: #565959;
+
+.hero-card h1 {
+  font-size: 3.3rem;
   margin-bottom: 2rem;
-  font-size: 1.1rem;
+  color: #222;
+  font-weight: 800;
+  line-height: 1.1;
 }
+
+
+.hero-card p {
+  font-size: 1.1rem;
+  color: #a2a2a2;
+  margin: 0;
+  line-height: 1.4;
+}
+
 
 /* CONTAINER */
 .items-container {
