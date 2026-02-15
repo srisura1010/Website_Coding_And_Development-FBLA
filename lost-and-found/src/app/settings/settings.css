@@ -1,7 +1,16 @@
+/* ===== THEME STYLES ===== */
+body.light {
+  background: #f9fafb;
+}
+
+body.dark {
+  background: #111827;
+}
+
 /* ===== PAGE WRAPPER ===== */
 .settings-page {
   min-height: 100vh;
-  background: #f9fafb; /* light gray background */
+  background: inherit; /* inherit from body */
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -10,12 +19,22 @@
 
 /* ===== MAIN CARD ===== */
 .settings-card {
-  background: #ffffff;
   width: 650px;
   max-width: 95%;
   border-radius: 16px;
   padding: 40px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+body.light .settings-card {
+  background: #ffffff;
+  color: #111827;
+}
+
+body.dark .settings-card {
+  background: #1f2937;
+  color: #f9fafb;
 }
 
 /* ===== PAGE TITLE ===== */
@@ -23,7 +42,14 @@
   font-size: 2rem;
   font-weight: 600;
   margin-bottom: 40px;
+}
+
+body.light .settings-card h1 {
   color: #111827;
+}
+
+body.dark .settings-card h1 {
+  color: #f9fafb;
 }
 
 /* ===== SECTION ===== */
@@ -37,8 +63,15 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  color: #6b7280;
   margin-bottom: 20px;
+}
+
+body.light .settings-section h3 {
+  color: #6b7280;
+}
+
+body.dark .settings-section h3 {
+  color: #9ca3af;
 }
 
 /* ===== THEME OPTIONS ===== */
@@ -52,29 +85,62 @@
   flex: 1;
   padding: 14px 0;
   border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  background: #f3f4f6;
+  border: 1px solid;
   cursor: pointer;
   font-weight: 500;
   font-size: 0.95rem;
   transition: all 0.2s ease;
 }
 
+body.light .theme-options button {
+  border-color: #e5e7eb;
+  background: #f3f4f6;
+  color: #111827;
+}
+
+body.dark .theme-options button {
+  border-color: #374151;
+  background: #374151;
+  color: #d1d5db;
+}
+
 /* Hover */
 .theme-options button:hover {
-  background: #e5e7eb;
   transform: translateY(-2px);
+}
+
+body.light .theme-options button:hover {
+  background: #e5e7eb;
+}
+
+body.dark .theme-options button:hover {
+  background: #4b5563;
 }
 
 /* Active state */
 .theme-options button.active {
-  background: #111827;
   color: #ffffff;
+}
+
+body.light .theme-options button.active {
+  background: #111827;
   border-color: #111827;
+}
+
+body.dark .theme-options button.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
 }
 
 /* Optional divider line */
 .settings-section + .settings-section {
-  border-top: 1px solid #e5e7eb;
   padding-top: 30px;
+}
+
+body.light .settings-section + .settings-section {
+  border-top: 1px solid #e5e7eb;
+}
+
+body.dark .settings-section + .settings-section {
+  border-top: 1px solid #374151;
 }
