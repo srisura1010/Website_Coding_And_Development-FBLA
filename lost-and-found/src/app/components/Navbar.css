@@ -50,10 +50,17 @@ body {
   white-space: nowrap;
 }
 
-.logo, .logo:visited {
-  text-decoration: none;
-  color: inherit;
+/* Make sure the link itself gets no underline and correct color */
+.logo, 
+.logo:link,      /* unvisited link */
+.logo:visited,   /* visited link */
+.logo:hover, 
+.logo:active {
+  color: white;            /* or whatever color you want */
+  text-decoration: none;   /* remove underline */
+  cursor: pointer;
 }
+
 
 .logo:hover {
   cursor: pointer;
