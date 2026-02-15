@@ -4,11 +4,12 @@ import "./Navbar.css";
 
 import { SignInButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SignUpButton, UserButton, useUser } from "@clerk/nextjs";
 import { useItems } from "@/context/ItemsContext";
 import { supabase } from "../../lib/supabaseClient";
 import Link from "next/dist/client/link";
+import { CiSettings } from "react-icons/ci";
 
 export default function Navbar() {
   const { isSignedIn, user } = useUser();
@@ -107,9 +108,17 @@ export default function Navbar() {
   return (
     <>
       <nav className="navbar">
-        <Link href="/" className="logo">Findr</Link>
+        <Link href="/" className="logo">
+          Findr
+        </Link>
 
         <ul className="nav-links">
+          <li>
+            <Link href="/settings" className="settings-icon-btn">
+              <CiSettings size={23} />
+            </Link>
+          </li>
+
           <li>
             {isSignedIn ? (
               <button

@@ -1,19 +1,20 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import { ItemsProvider } from "@/context/ItemsContext";
-import Navbar from "./components/Navbar"; // Make sure to import Navbar here
+import Navbar from "./components/Navbar";
+import { ThemeProvider } from "./ThemeProvider"; // adjust path if needed
+
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider>
       <html lang="en">
         <body>
-          <ItemsProvider>
-            
-            <Navbar /> 
-            
-            {children}
-
-          </ItemsProvider>
+          <ThemeProvider>
+            <ItemsProvider>
+              <Navbar />
+              {children}
+            </ItemsProvider>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>

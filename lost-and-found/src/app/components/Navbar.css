@@ -211,3 +211,164 @@ body {
     font-size: 0.9rem;
   }
 }
+
+
+
+/* ===== SETTINGS ICON BUTTON ===== */
+.settings-icon-btn {
+  background: transparent;
+  border: none;                /* removes inherited border */
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  border-radius: 50%;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+/* Hover effect */
+.settings-icon-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: rotate(30deg);   /* optional cool spin effect */
+}
+
+/* Optional: active state */
+.settings-icon-btn:active {
+  transform: scale(0.95);
+}
+
+/* ===== SETTINGS OVERLAY ===== */
+.settings-dropdown {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4); /* subtle dim background */
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  z-index: 2000;
+}
+
+/* ===== SETTINGS CARD ===== */
+.settings-panel {
+  background: #ffffff;
+  width: 800px;
+  height: 600px;
+  max-width: 90%;
+  padding: 2rem 2.5rem;
+  border-radius: 14px;
+
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+
+  animation: fadeIn 0.2s ease;
+}
+
+/* ===== TITLE ===== */
+.settings-panel h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  color: #111827;
+}
+
+/* ===== SECTION LABEL ===== */
+.settings-panel h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ===== OPTIONS CONTAINER ===== */
+.theme-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* ===== OPTION BUTTON ===== */
+.theme-options button {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: #111827;
+
+  transition: background 0.15s ease, border 0.15s ease;
+}
+
+.theme-options button:hover {
+  background: #e5e7eb;
+}
+
+/* Active state */
+.theme-options button.active {
+  background: #111827;
+  color: white;
+  border-color: #111827;
+}
+
+/* ===== SIMPLE FADE IN ===== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+
+/* ===== LIGHT MODE ===== */
+body.light .navbar {
+  background-color: white;
+  color: #1f2937; /* dark text for light mode */
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+body.light .navbar .logo {
+  color: #1f2937;
+}
+
+body.light .navbar .dashboard-link {
+  color: #1f2937;
+  border: 1px solid #cbd5e1; /* light gray border */
+  background-color: transparent;
+}
+
+body.light .navbar .dashboard-link:hover {
+  background-color: #1f2937;
+  color: white;
+}
+
+body.light .navbar .sign-up {
+  background-color: #ffd814; /* keep yellow */
+  color: #1f1f1f; /* dark text */
+  border: 1px solid #ffd814;
+}
+
+body.light .navbar .sign-up:hover {
+  background-color: #1f1f1f;
+  color: #ffd814;
+}
+
+body.light .navbar .add-btn {
+  background-color: #16a34a; /* green for light mode */
+  color: white;
+}
+
+body.light .navbar .add-btn:hover {
+  background-color: #22c55e;
+}
+
+body.light .navbar .settings-icon-btn {
+  color: #1f2937;
+}
+
+body.light .navbar .settings-icon-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}

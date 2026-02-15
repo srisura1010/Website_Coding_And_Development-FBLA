@@ -1,0 +1,80 @@
+/* ===== PAGE WRAPPER ===== */
+.settings-page {
+  min-height: 100vh;
+  background: #f9fafb; /* light gray background */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 60px 20px;
+}
+
+/* ===== MAIN CARD ===== */
+.settings-card {
+  background: #ffffff;
+  width: 650px;
+  max-width: 95%;
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+}
+
+/* ===== PAGE TITLE ===== */
+.settings-card h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 40px;
+  color: #111827;
+}
+
+/* ===== SECTION ===== */
+.settings-section {
+  margin-bottom: 40px;
+}
+
+/* Section heading */
+.settings-section h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #6b7280;
+  margin-bottom: 20px;
+}
+
+/* ===== THEME OPTIONS ===== */
+.theme-options {
+  display: flex;
+  gap: 16px;
+}
+
+/* Theme buttons */
+.theme-options button {
+  flex: 1;
+  padding: 14px 0;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #f3f4f6;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+/* Hover */
+.theme-options button:hover {
+  background: #e5e7eb;
+  transform: translateY(-2px);
+}
+
+/* Active state */
+.theme-options button.active {
+  background: #111827;
+  color: #ffffff;
+  border-color: #111827;
+}
+
+/* Optional divider line */
+.settings-section + .settings-section {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 30px;
+}
