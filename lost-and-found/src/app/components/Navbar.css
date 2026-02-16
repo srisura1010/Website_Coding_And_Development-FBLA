@@ -372,3 +372,82 @@ body.light .navbar .settings-icon-btn {
 body.light .navbar .settings-icon-btn:hover {
   background-color: rgba(0, 0, 0, 0.05);
 }
+/* ===== MOBILE RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 15px 10px;
+    flex-wrap: wrap;
+  }
+
+  .logo {
+    font-size: 1.3rem;
+  }
+
+  .nav-links {
+    gap: 8px;
+    font-size: 0.85rem;
+  }
+
+  .dashboard-link,
+  .add-btn,
+  .sign-up {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+
+  .settings-icon-btn {
+    padding: 8px;
+  }
+
+  /* Modal on mobile */
+  .modal-content {
+    width: 90%;
+    max-width: 400px;
+    padding: 20px;
+    margin: 20px;
+  }
+
+  .modal-content h3 {
+    font-size: 1.2rem;
+  }
+
+  .modal-content input,
+  .modal-content textarea {
+    font-size: 0.95rem;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .modal-actions button {
+    width: 100%;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+  .navbar {
+    padding: 10px 8px;
+  }
+
+  .logo {
+    font-size: 1.1rem;
+  }
+
+  .nav-links {
+    gap: 5px;
+  }
+
+  .dashboard-link,
+  .add-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  /* Hide text, show icon only on very small screens */
+  .add-btn {
+    font-size: 0.75rem;
+  }
+}

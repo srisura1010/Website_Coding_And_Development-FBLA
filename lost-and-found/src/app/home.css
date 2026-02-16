@@ -264,3 +264,70 @@ body.dark .card {
 body.dark .carousel {
   border: 5px solid #1e3a8a;
 }
+/* ===== MOBILE RESPONSIVE ===== */
+@media (max-width: 768px) {
+  /* Hero card */
+  .hero-card {
+    padding: 30px 20px;
+    margin: 20px;
+    max-width: 95%;
+  }
+
+  .hero-card h1 {
+    font-size: 2rem; /* Smaller on mobile */
+  }
+
+  .lostHero,
+  .panicHero {
+    font-size: 2rem !important;
+    display: block;
+  }
+
+  .hero-card p {
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  /* Buttons stack vertically */
+  .hero-card button {
+    display: block;
+    width: 100%;
+    margin: 10px 0;
+    font-size: 0.9rem;
+    padding: 12px;
+  }
+
+  /* Carousel cards */
+  .card {
+    min-width: 280px; /* Smaller cards */
+    padding: 20px;
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+  }
+
+  .card-body {
+    font-size: 0.85rem;
+  }
+
+  .card-icon {
+    font-size: 2rem;
+  }
+}
+
+/* Extra small phones */
+@media (max-width: 480px) {
+  .hero-card h1 {
+    font-size: 1.5rem;
+  }
+
+  .lostHero,
+  .panicHero {
+    font-size: 1.5rem !important;
+  }
+
+  .card {
+    min-width: 250px;
+  }
+}

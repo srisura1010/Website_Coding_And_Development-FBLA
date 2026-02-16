@@ -109,3 +109,51 @@
     width: 100%;
   }
 }
+/* ===== MOBILE RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .dashboard-page {
+    padding: 10px;
+  }
+
+  .items-container {
+    grid-template-columns: 1fr; /* Single column on mobile */
+    gap: 15px;
+    padding: 10px;
+  }
+
+  .item-card {
+    display: flex;
+    flex-direction: column;
+    max-width: 100%;
+  }
+
+  .item-image {
+    width: 100%;
+    height: 200px; /* Fixed height for consistency */
+    object-fit: cover;
+  }
+
+  .item-info {
+    padding: 15px;
+  }
+
+  .item-info h3 {
+    font-size: 1.2rem;
+  }
+
+  .item-info p {
+    font-size: 0.9rem;
+  }
+
+  .button-group {
+    padding: 0 15px 15px;
+  }
+
+  .retrieve-button,
+  .confirm-button,
+  .pending-button {
+    width: 100%;
+    padding: 12px;
+    font-size: 0.95rem;
+  }
+}
