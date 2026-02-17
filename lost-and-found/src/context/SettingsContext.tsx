@@ -33,12 +33,21 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   // Apply theme to document
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    document.documentElement.dataset.font = font;
-    document.body.classList.remove("light", "dark");
-    document.body.classList.add(theme);
-    localStorage.setItem("theme", theme);
-  }, [theme, font]);
+  // Remove all possible theme classes first
+  document.body.classList.remove("light", "dark", "high-contrast", "colorblind");
+
+  // Add the currently selected theme
+  document.body.classList.add(theme);
+
+  // Update dataset attributes
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.dataset.font = font;
+
+  // Save theme & language to localStorage
+  localStorage.setItem("theme", theme);
+  localStorage.setItem("language", language);
+}, [theme, font, language]);
+
 
   // Save language to localStorage
   useEffect(() => {

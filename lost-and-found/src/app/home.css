@@ -13,25 +13,26 @@ body.light .grid-background-light {
 /* ----- DARK MODE GRID ----- */
 body.dark .grid-background {
   background-color: #0f172a;
+  background-size: 18px 32px; /* bigger grid */
   background-image:
     linear-gradient(to right, rgba(79, 79, 79, 0.18) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(79, 79, 79, 0.18) 1px, transparent 1px);
 
-  /* Start grid slightly lower */
   background-position: 0 0;
 
-  /* Radial fade moves lower to reach middle */
+  /* Match white grid size */
   -webkit-mask-image: radial-gradient(
-    ellipse 60% 50% at 50% 25%,
+    ellipse 80% 50% at 50% 25%,
     #000 70%,
     transparent 100%
   );
   mask-image: radial-gradient(
-    ellipse 60% 50% at 50% 25%,
+    ellipse 80% 50% at 50% 25%,
     #000 70%,
     transparent 100%
   );
 }
+
 
 /* ----- LIGHT MODE GRID ----- */
 body.light .grid-background-light {
@@ -54,6 +55,35 @@ body.light .grid-background-light {
     transparent 110%
   );
 }
+
+/* ===== COLORBLIND GRID ===== */
+body.colorblind .grid-background,
+body.colorblind .grid-background-light {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-size: 18px 32px;
+
+  background-color: #e6f0ff; /* light sky blue background */
+  background-image:
+    linear-gradient(to right, rgba(0, 51, 102, 0.2) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 51, 102, 0.2) 1px, transparent 1px);
+
+  background-position: 0 0;
+
+  -webkit-mask-image: radial-gradient(
+    ellipse 80% 50% at 50% 25%,
+    #000 70%,
+    transparent 110%
+  );
+  mask-image: radial-gradient(
+    ellipse 80% 50% at 50% 25%,
+    #000 70%,
+    transparent 110%
+  );
+}
+
 
 /* ===== GLOBAL ===== */
 html,
@@ -154,6 +184,8 @@ body {
   flex: 0 0 18rem;
   height: 16rem;
   padding: 1.25rem;
+  padding-top: 3rem;
+  padding-bottom: 2rem;
   font-size: 1rem;
   text-align: left;
   display: flex;
@@ -173,7 +205,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 2rem 0;
+  margin: 1.2rem 0;
   transition:
     transform 0.25s ease,
     color 0.25s ease;
@@ -187,7 +219,10 @@ body {
   font-size: 1.1rem;
   font-weight: 600;
   padding: 0;
+  justify-content: center;
+  align-items: center;
 }
+
 .card-body {
   margin: 0.5rem 0 2rem 0;
   font-size: 0.9rem;
@@ -264,6 +299,136 @@ body.dark .card {
 body.dark .carousel {
   border: 5px solid #1e3a8a;
 }
+
+
+/* ===== HIGH CONTRAST MODE ===== */
+body.high-contrast {
+  background-color: #000000;
+  color: #ffff00; /* bright yellow text for readability */
+}
+
+body.high-contrast .grid-background,
+body.high-contrast .grid-background-light {
+  background-color: #000000; /* black grid background */
+  background-image: none; /* remove subtle grid lines for max contrast */
+}
+
+body.high-contrast .hero-card {
+  background-color: #000000;
+  border: 3px solid #ffff00;
+  box-shadow: none;
+  color: #ffff00;
+}
+
+body.high-contrast .hero-card h1 .lostHero,
+body.high-contrast .hero-card h1 .panicHero {
+  color: #ffff00;
+}
+
+body.high-contrast .hero-card p {
+  color: #ffff00;
+}
+
+body.high-contrast .hero-card .report {
+  background-color: #ffff00;
+  color: #000000;
+  border: 2px solid #ffff00;
+}
+
+body.high-contrast .hero-card .report:hover {
+  background-color: #ffd700;
+  color: #000000;
+  box-shadow: none;
+}
+
+body.high-contrast .hero-card .browse {
+  background-color: transparent;
+  color: #ffff00;
+  border: 2px solid #ffff00;
+}
+
+body.high-contrast .hero-card .browse:hover {
+  background-color: #ffff00;
+  color: #000000;
+}
+
+body.high-contrast .card {
+  background-color: #000000;
+  border: 2px solid #ffff00;
+  color: #ffff00;
+  box-shadow: none;
+}
+
+body.high-contrast .carousel {
+  border: 5px solid #ffff00;
+}
+
+/* ===== COLORBLIND MODE ===== */
+/* Using strong contrast blue + yellow palette for legibility */
+body.colorblind {
+  background-color: #ffffff; /* light neutral background */
+  color: #003366; /* dark navy text */
+}
+
+body.colorblind .grid-background,
+body.colorblind .grid-background-light {
+  background-color: #e6f0ff; /* light sky blue grid */
+  background-image:
+    linear-gradient(to right, rgba(0, 51, 102, 0.2) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 51, 102, 0.2) 1px, transparent 1px);
+}
+
+body.colorblind .hero-card {
+  background-color: #003366; /* navy card background */
+  border: 3px solid #ffdd44; /* yellow border for contrast */
+  color: #ffdd44;
+  box-shadow: none;
+}
+
+body.colorblind .hero-card h1 .lostHero,
+body.colorblind .hero-card h1 .panicHero {
+  color: #ffdd44;
+}
+
+body.colorblind .hero-card p {
+  color: #ffdd44;
+}
+
+body.colorblind .hero-card .report {
+  background-color: #ffdd44; /* yellow button */
+  color: #003366; /* navy text */
+  border: 2px solid #ffdd44;
+}
+
+body.colorblind .hero-card .report:hover {
+  background-color: #ffd814;
+  color: #003366;
+  box-shadow: none;
+}
+
+body.colorblind .hero-card .browse {
+  background-color: transparent;
+  color: #ffdd44;
+  border: 2px solid #ffdd44;
+}
+
+body.colorblind .hero-card .browse:hover {
+  background-color: #ffdd44;
+  color: #003366;
+}
+
+body.colorblind .card {
+  background-color: #003366;
+  border: 2px solid #ffdd44;
+  color: #ffdd44;
+  box-shadow: none;
+}
+
+body.colorblind .carousel {
+  border: 5px solid #ffdd44;
+}
+
+
 /* ===== MOBILE RESPONSIVE ===== */
 @media (max-width: 768px) {
   /* Hero card */

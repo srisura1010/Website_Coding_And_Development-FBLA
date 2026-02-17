@@ -132,6 +132,85 @@ body.dark .theme-options button.active {
   border-color: #3b82f6;
 }
 
+/* ===== HIGH CONTRAST THEME ===== */
+body.high-contrast {
+  background: #000000;
+}
+
+body.high-contrast .settings-card {
+  background: #000000;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+body.high-contrast .settings-card h1 {
+  color: #ffffff;
+}
+
+body.high-contrast .settings-section h3 {
+  color: #ffffff;
+}
+
+body.high-contrast .theme-options button {
+  border-color: #ffffff;
+  background: #000000;
+  color: #ffffff;
+}
+
+body.high-contrast .theme-options button:hover {
+  background: #111111;
+}
+
+body.high-contrast .theme-options button.active {
+  background: #ffff00;
+  border-color: #ffff00;
+  color: #000000;
+}
+
+body.high-contrast .settings-section + .settings-section {
+  border-top: 1px solid #ffffff;
+}
+
+
+/* ===== COLORBLIND THEME ===== */
+body.colorblind {
+  background: #0b1f3b;
+}
+
+body.colorblind .settings-card {
+  background: #13294b;
+  color: #f5f5f5;
+}
+
+body.colorblind .settings-card h1 {
+  color: #facc15;
+}
+
+body.colorblind .settings-section h3 {
+  color: #93c5fd;
+}
+
+body.colorblind .theme-options button {
+  border-color: #1e3a8a;
+  background: #1e3a8a;
+  color: #f5f5f5;
+}
+
+body.colorblind .theme-options button:hover {
+  background: #2563eb;
+}
+
+body.colorblind .theme-options button.active {
+  background: #facc15;
+  border-color: #facc15;
+  color: #0b1f3b;
+}
+
+body.colorblind .settings-section + .settings-section {
+  border-top: 1px solid #1e3a8a;
+}
+
+
 /* Optional divider line */
 .settings-section + .settings-section {
   padding-top: 30px;
@@ -175,3 +254,4 @@ body.dark .settings-section + .settings-section {
     font-size: 0.9rem;
   }
 }
+

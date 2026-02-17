@@ -5,43 +5,24 @@ import { useSettings } from "@/context/SettingsContext";
 import "./settings.css";
 
 const SettingsPage = () => {
-  const { theme, language, setTheme, setLanguage } = useSettings();
+  const {
+    theme,
+    language,
+    setTheme,
+    setLanguage,
+  } = useSettings();
 
-  // Load from localStorage immediately
-  const [settingsText, setSettingsText] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`settings_title_${language}`) || "Settings";
-    }
-    return "Settings";
-  });
+  /* ------------------ TEXT STATE ------------------ */
 
-  const [appearanceText, setAppearanceText] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`settings_appearance_${language}`) || "Appearance";
-    }
-    return "Appearance";
-  });
+  const [settingsText, setSettingsText] = useState("Settings");
+  const [appearanceText, setAppearanceText] = useState("Appearance");
+  const [lightText, setLightText] = useState("Light");
+  const [darkText, setDarkText] = useState("Dark");
+  const [highContrastText, setHighContrastText] = useState("High Contrast");
+  const [colorblindText, setColorblindText] = useState("Colorblind Mode");
+  const [languageText, setLanguageText] = useState("Language");
 
-  const [lightText, setLightText] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`settings_light_${language}`) || "Light";
-    }
-    return "Light";
-  });
-
-  const [darkText, setDarkText] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`settings_dark_${language}`) || "Dark";
-    }
-    return "Dark";
-  });
-
-  const [languageText, setLanguageText] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`settings_language_${language}`) || "Language";
-    }
-    return "Language";
-  });
+  /* ------------------ TRANSLATION EFFECT ------------------ */
 
   useEffect(() => {
     if (language === "en") {
@@ -49,20 +30,24 @@ const SettingsPage = () => {
       setAppearanceText("Appearance");
       setLightText("Light");
       setDarkText("Dark");
+      setHighContrastText("High Contrast");
+      setColorblindText("Colorblind Mode");
       setLanguageText("Language");
       return;
     }
 
     const translateAndCache = async () => {
       const translations = [
-        { key: "Settings", setter: setSettingsText, cacheKey: "settings_title" },
-        { key: "Appearance", setter: setAppearanceText, cacheKey: "settings_appearance" },
-        { key: "Light", setter: setLightText, cacheKey: "settings_light" },
-        { key: "Dark", setter: setDarkText, cacheKey: "settings_dark" },
-        { key: "Language", setter: setLanguageText, cacheKey: "settings_language" },
+        { key: "Settings", setter: setSettingsText },
+        { key: "Appearance", setter: setAppearanceText },
+        { key: "Light", setter: setLightText },
+        { key: "Dark", setter: setDarkText },
+        { key: "High Contrast", setter: setHighContrastText },
+        { key: "Colorblind Mode", setter: setColorblindText },
+        { key: "Language", setter: setLanguageText },
       ];
 
-      for (const { key, setter, cacheKey } of translations) {
+      for (const { key, setter } of translations) {
         try {
           const res = await fetch("/api/translate", {
             method: "POST",
@@ -72,13 +57,9 @@ const SettingsPage = () => {
 
           if (res.ok) {
             const data = await res.json();
-            const translated = data.translatedText || key;
-            setter(translated);
-            localStorage.setItem(`${cacheKey}_${language}`, translated);
+            setter(data.translatedText || key);
           }
-        } catch (error) {
-          // Keep using cached or default
-        }
+        } catch {}
       }
     };
 
@@ -90,22 +71,39 @@ const SettingsPage = () => {
       <div className="settings-card">
         <h1>{settingsText}</h1>
 
-        {/* THEME SECTION */}
+        {/* APPEARANCE SECTION */}
         <section className="settings-section">
           <h3>{appearanceText}</h3>
           <div className="theme-options">
+            
             <button
               className={theme === "light" ? "active" : ""}
               onClick={() => setTheme("light")}
             >
               {lightText}
             </button>
+
             <button
               className={theme === "dark" ? "active" : ""}
               onClick={() => setTheme("dark")}
             >
               {darkText}
             </button>
+
+            <button
+              className={theme === "high-contrast" ? "active" : ""}
+              onClick={() => setTheme("high-contrast")}
+            >
+              {highContrastText}
+            </button>
+
+            <button
+              className={theme === "colorblind" ? "active" : ""}
+              onClick={() => setTheme("colorblind")}
+            >
+              {colorblindText}
+            </button>
+
           </div>
         </section>
 

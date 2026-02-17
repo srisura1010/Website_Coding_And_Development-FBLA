@@ -372,6 +372,109 @@ body.light .navbar .settings-icon-btn {
 body.light .navbar .settings-icon-btn:hover {
   background-color: rgba(0, 0, 0, 0.05);
 }
+
+
+/* ===== HIGH CONTRAST MODE ===== */
+body.high-contrast .navbar {
+  background-color: black;
+  color: yellow;
+  box-shadow: 0 3px 9px rgba(255, 255, 0, 0.4);
+}
+
+body.high-contrast .navbar .logo {
+  color: yellow;
+}
+
+body.high-contrast .navbar .dashboard-link {
+  color: yellow;
+  border: 2px solid yellow;
+  background-color: black;
+}
+
+body.high-contrast .navbar .dashboard-link:hover {
+  background-color: yellow;
+  color: black;
+}
+
+body.high-contrast .navbar .sign-up {
+  background-color: yellow;
+  color: black;
+  border: 2px solid yellow;
+}
+
+body.high-contrast .navbar .sign-up:hover {
+  background-color: black;
+  color: yellow;
+}
+
+body.high-contrast .navbar .add-btn {
+  background-color: yellow;
+  color: black;
+}
+
+body.high-contrast .navbar .add-btn:hover {
+  background-color: black;
+  color: yellow;
+}
+
+body.high-contrast .navbar .settings-icon-btn {
+  color: yellow;
+}
+
+body.high-contrast .navbar .settings-icon-btn:hover {
+  background-color: rgba(255, 255, 0, 0.2);
+}
+
+body.colorblind .navbar {
+  background-color: #0b3d91; /* dark blue background */
+  color: #ffdd44; /* high-contrast yellow text */
+  box-shadow: none;
+}
+
+body.colorblind .navbar .logo {
+  color: #ffdd44;
+}
+
+body.colorblind .navbar .dashboard-link {
+  color: #ffdd44;
+  border: 1px solid #ffdd44;
+  background-color: #004080; /* slightly lighter blue for buttons */
+}
+
+body.colorblind .navbar .dashboard-link:hover {
+  background-color: #ffdd44;
+  color: #0b3d91;
+}
+
+body.colorblind .navbar .sign-up {
+  background-color: #ffdd44; /* yellow for emphasis */
+  color: #0b3d91;
+  border: 1px solid #ffdd44;
+}
+
+body.colorblind .navbar .sign-up:hover {
+  background-color: #0b3d91;
+  color: #ffdd44;
+}
+
+body.colorblind .navbar .add-btn {
+  background-color: #0066cc; /* distinct blue button */
+  color: #ffffff;
+}
+
+body.colorblind .navbar .add-btn:hover {
+  background-color: #004c99;
+}
+
+body.colorblind .navbar .settings-icon-btn {
+  color: #ffdd44;
+}
+
+body.colorblind .navbar .settings-icon-btn:hover {
+  background-color: rgba(255, 221, 68, 0.15);
+}
+
+
 /* ===== MOBILE RESPONSIVE ===== */
 @media (max-width: 768px) {
   .navbar {
