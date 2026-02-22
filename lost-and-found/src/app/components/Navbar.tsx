@@ -21,14 +21,10 @@ export default function Navbar() {
   const [newItemDesc, setNewItemDesc] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-
-  // ── Unread message count ──────────────────────────────────────────────────
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
-
-    // Fetch initial unread count
     const fetchUnread = async () => {
       const { count } = await supabase
         .from("chat_messages")
@@ -38,28 +34,16 @@ export default function Navbar() {
       setUnreadCount(count ?? 0);
     };
     fetchUnread();
-
-    // Listen for new incoming messages in real time
     const channel = supabase
       .channel("navbar-unread")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `receiver_id=eq.${user.id}`,
-        },
-        () => {
-          setUnreadCount((prev) => prev + 1);
-        }
-      )
+      .on("postgres_changes", {
+        event: "INSERT", schema: "public", table: "chat_messages",
+        filter: `receiver_id=eq.${user.id}`,
+      }, () => setUnreadCount((prev) => prev + 1))
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
-  // ── Translations (unchanged) ──────────────────────────────────────────────
   const [dashboardText, setDashboardText] = useState(() => {
     if (typeof window !== 'undefined') return localStorage.getItem(`nav_dashboard_${language}`) || "Dashboard";
     return "Dashboard";
@@ -99,15 +83,10 @@ export default function Navbar() {
 
   useEffect(() => {
     if (language === "en") {
-      setDashboardText("Dashboard");
-      setAddItemText("+ Add Item");
-      setSignUpText("Sign Up");
-      setReportFoundText("Report Found Item");
-      setItemNameText("Item Name");
-      setDescriptionText("Description (location, time, etc)");
-      setCancelText("Cancel");
-      setPostItemText("Post Item");
-      setUploadingText("Uploading...");
+      setDashboardText("Dashboard"); setAddItemText("+ Add Item"); setSignUpText("Sign Up");
+      setReportFoundText("Report Found Item"); setItemNameText("Item Name");
+      setDescriptionText("Description (location, time, etc)"); setCancelText("Cancel");
+      setPostItemText("Post Item"); setUploadingText("Uploading...");
       return;
     }
     const translateAndCache = async () => {
@@ -125,8 +104,7 @@ export default function Navbar() {
       for (const { key, setter, cacheKey } of translations) {
         try {
           const res = await fetch("/api/translate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+            method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: key, target: language }),
           });
           if (res.ok) {
@@ -145,32 +123,76 @@ export default function Navbar() {
     if (e.target.files && e.target.files[0]) setSelectedFile(e.target.files[0]);
   };
 
+  // ── Silently extract keywords from image via Gemini ───────────────────────
+  const extractKeywords = async (file: File): Promise<string> => {
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const res = await fetch("/api/image-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),
+      });
+      if (!res.ok) return "";
+      const { keywords } = await res.json();
+      return keywords ?? "";
+    } catch {
+      return ""; // fail silently — item still posts without keywords
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItemName || !newItemDesc || !selectedFile || !user) return;
     setIsUploading(true);
     try {
       const fileName = `${Date.now()}_${selectedFile.name}`;
-      const { error: uploadError } = await supabase.storage.from("item-images").upload(fileName, selectedFile);
-      if (uploadError) { console.error("Upload error:", uploadError.message); return; }
+
+      // Upload image + extract keywords in parallel
+      const [uploadResult, aiKeywords] = await Promise.all([
+        supabase.storage.from("item-images").upload(fileName, selectedFile),
+        extractKeywords(selectedFile),
+      ]);
+
+      if (uploadResult.error) { console.error("Upload error:", uploadResult.error.message); return; }
+
       const { data: urlData } = supabase.storage.from("item-images").getPublicUrl(fileName);
       const imageUrl = urlData.publicUrl;
+
       const { data: insertedItem, error: insertError } = await supabase
         .from("items")
         .insert([{
-          name: newItemName, description: newItemDesc, image_url: imageUrl,
+          name: newItemName,
+          description: newItemDesc,
+          image_url: imageUrl,
           author_name: user.fullName || user.username || "Anonymous",
-          author_avatar: user.imageUrl, author_id: user.id,
-          author_email: user.primaryEmailAddress?.emailAddress, status: "waiting",
+          author_avatar: user.imageUrl,
+          author_id: user.id,
+          author_email: user.primaryEmailAddress?.emailAddress,
+          status: "waiting",
+          ai_keywords: aiKeywords, // ← stored silently from Gemini
         }])
         .select().single();
+
       if (insertError) { console.error("Insert error:", insertError.message); return; }
+
       addItem({
-        id: insertedItem.id, name: insertedItem.name, description: insertedItem.description,
-        image: insertedItem.image_url, authorName: insertedItem.author_name,
-        authorAvatar: insertedItem.author_avatar, status: insertedItem.status,
-        authorId: insertedItem.author_id, authorEmail: "",
-      });
+        id: insertedItem.id,
+        name: insertedItem.name,
+        description: insertedItem.description,
+        image: insertedItem.image_url,
+        authorName: insertedItem.author_name,
+        authorAvatar: insertedItem.author_avatar,
+        status: insertedItem.status,
+        authorId: insertedItem.author_id,
+        authorEmail: insertedItem.author_email || "",
+        aiKeywords: insertedItem.ai_keywords || "",
+      } as any);
+
       setNewItemName(""); setNewItemDesc(""); setSelectedFile(null); setIsModalOpen(false);
     } catch (err) {
       console.error("Unexpected error:", err);
@@ -183,14 +205,12 @@ export default function Navbar() {
     <>
       <nav className="navbar">
         <Link href="/" className="logo">Findr</Link>
-
         <ul className="nav-links">
           <li>
             <Link href="/settings" className="settings-icon-btn">
               <CiSettings size={23} />
             </Link>
           </li>
-
           <li>
             {isSignedIn ? (
               <button className="dashboard-link" onClick={() => router.push("/dashboard")}>
@@ -202,8 +222,6 @@ export default function Navbar() {
               </SignInButton>
             )}
           </li>
-
-          {/* ── Messages link with unread badge ── */}
           {isSignedIn && (
             <li>
               <button
@@ -211,13 +229,12 @@ export default function Navbar() {
                 onClick={() => { setUnreadCount(0); router.push("/messages"); }}
                 style={{ position: "relative" }}
               >
-                 Messages
+                Messages
                 {unreadCount > 0 && (
                   <span style={{
                     position: "absolute", top: -6, right: -8,
-                    background: "#ef4444", color: "#fff",
-                    borderRadius: "50%", width: 18, height: 18,
-                    fontSize: 11, fontWeight: 700,
+                    background: "#ef4444", color: "#fff", borderRadius: "50%",
+                    width: 18, height: 18, fontSize: 11, fontWeight: 700,
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
                     {unreadCount > 9 ? "9+" : unreadCount}
@@ -226,7 +243,6 @@ export default function Navbar() {
               </button>
             </li>
           )}
-
           {isSignedIn ? (
             <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
               <button className="add-btn" onClick={() => setIsModalOpen(true)}>{addItemText}</button>
@@ -247,12 +263,16 @@ export default function Navbar() {
           <div className="modal-content">
             <h3>{reportFoundText}</h3>
             <form onSubmit={handleSubmit}>
-              <input type="text" placeholder={itemNameText} value={newItemName} onChange={(e) => setNewItemName(e.target.value)} required />
-              <textarea placeholder={descriptionText} value={newItemDesc} onChange={(e) => setNewItemDesc(e.target.value)} required />
+              <input type="text" placeholder={itemNameText} value={newItemName}
+                onChange={(e) => setNewItemName(e.target.value)} required />
+              <textarea placeholder={descriptionText} value={newItemDesc}
+                onChange={(e) => setNewItemDesc(e.target.value)} required />
               <input type="file" accept="image/*" onChange={handleFileChange} required />
               <div className="modal-actions">
                 <button className="button" type="button" onClick={() => setIsModalOpen(false)}>{cancelText}</button>
-                <button className="button" type="submit" disabled={isUploading}>{isUploading ? uploadingText : postItemText}</button>
+                <button className="button" type="submit" disabled={isUploading}>
+                  {isUploading ? uploadingText : postItemText}
+                </button>
               </div>
             </form>
           </div>

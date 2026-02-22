@@ -10,11 +10,11 @@ export interface Item {
   image: string;
   authorName: string;
   authorAvatar?: string;
-  // --- New Fields for the Lifecycle ---
-  status: string;         // 'waiting', 'pending', or 'claimed'
-  authorId: string;       // To check if current user is the owner
-  authorEmail: string;    // To send the notification email
-  claimerEmail?: string;  // Who is trying to retrieve it
+  status: string;
+  authorId: string;
+  authorEmail: string;
+  claimerEmail?: string;
+  aiKeywords?: string; // ← new field from Gemini
 }
 
 interface ItemsContextType {
@@ -28,7 +28,6 @@ const ItemsContext = createContext<ItemsContextType | undefined>(undefined);
 export const ItemsProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<Item[]>([]);
 
-  // 1. Fetch items including new columns
   useEffect(() => {
     const fetchItems = async () => {
       const { data, error } = await supabase
@@ -36,10 +35,7 @@ export const ItemsProvider = ({ children }: { children: ReactNode }) => {
         .select("*")
         .order("id", { ascending: false });
 
-      if (error) {
-        console.error("Failed to fetch items:", error.message);
-        return;
-      }
+      if (error) { console.error("Failed to fetch items:", error.message); return; }
 
       const formattedItems = data.map((item) => ({
         id: item.id,
@@ -48,11 +44,11 @@ export const ItemsProvider = ({ children }: { children: ReactNode }) => {
         image: item.image_url,
         authorName: item.author_name,
         authorAvatar: item.author_avatar,
-        // Map new DB columns to our Item interface
         status: item.status,
         authorId: item.author_id,
         authorEmail: item.author_email,
         claimerEmail: item.claimer_email,
+        aiKeywords: item.ai_keywords || "", // ← mapped from DB
       }));
 
       setItems(formattedItems);
@@ -61,17 +57,15 @@ export const ItemsProvider = ({ children }: { children: ReactNode }) => {
     fetchItems();
   }, []);
 
-  // 2. Add new item instantly
   const addItem = (item: Item) => {
     setItems((prev) => [item, ...prev]);
   };
 
-  // 3. Update status instantly (No refresh needed!)
   const updateItemStatus = (id: number, newStatus: string, claimerEmail?: string) => {
     setItems((prev) =>
       prev.map((item) =>
-        item.id === id 
-          ? { ...item, status: newStatus, claimerEmail: claimerEmail || item.claimerEmail } 
+        item.id === id
+          ? { ...item, status: newStatus, claimerEmail: claimerEmail || item.claimerEmail }
           : item
       )
     );
@@ -86,8 +80,6 @@ export const ItemsProvider = ({ children }: { children: ReactNode }) => {
 
 export const useItems = () => {
   const context = useContext(ItemsContext);
-  if (!context) {
-    throw new Error("useItems must be used inside ItemsProvider");
-  }
+  if (!context) throw new Error("useItems must be used inside ItemsProvider");
   return context;
 };
