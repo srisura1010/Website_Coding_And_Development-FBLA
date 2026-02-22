@@ -9,8 +9,6 @@ import { useSettings } from "@/context/SettingsContext";
 import { useEffect, useState, useRef } from "react";
 import { getConversationId } from "@/app/components/MessagingSystem";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 interface Message {
   id: number;
   conversation_id: string;
@@ -48,15 +46,12 @@ interface ChatModalProps {
   onClose: () => void;
 }
 
-// ─── Chat Modal ───────────────────────────────────────────────────────────────
-
 function ChatModal({ conversationId, item, currentUser, otherUser, onClose }: ChatModalProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Load existing messages
   useEffect(() => {
     const fetchMessages = async () => {
       const { data } = await supabase
@@ -68,29 +63,25 @@ function ChatModal({ conversationId, item, currentUser, otherUser, onClose }: Ch
     };
     fetchMessages();
 
-    // Subscribe to new messages in real time
     const channel = supabase
       .channel(`chat:${conversationId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          setMessages((prev) => [...prev, payload.new as Message]);
-        }
-      )
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "chat_messages",
+        filter: `conversation_id=eq.${conversationId}`,
+      }, (payload) => {
+        // Only add if not already in list (avoid duplicate from optimistic update)
+        setMessages((prev) => {
+          const exists = prev.some((m) => m.id === (payload.new as Message).id);
+          return exists ? prev : [...prev, payload.new as Message];
+        });
+      })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [conversationId]);
 
-  // Scroll to bottom on new message
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -101,7 +92,9 @@ function ChatModal({ conversationId, item, currentUser, otherUser, onClose }: Ch
     const trimmed = text.trim();
     setText("");
 
-    await supabase.from("chat_messages").insert({
+    // Optimistically add message immediately so sender sees it right away
+    const optimistic: Message = {
+      id: Date.now(), // temp ID
       conversation_id: conversationId,
       sender_id: currentUser.uid,
       sender_name: currentUser.displayName,
@@ -109,16 +102,27 @@ function ChatModal({ conversationId, item, currentUser, otherUser, onClose }: Ch
       item_id: String(item.id),
       item_title: item.name,
       text: trimmed,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimistic]);
+
+    await supabase.from("chat_messages").insert({
+      conversation_id: conversationId,
+      sender_id: currentUser.uid,
+      sender_name: currentUser.displayName,
+      receiver_id: otherUser.uid,
+      receiver_name: otherUser.displayName, // store receiver name so they see it correctly
+      item_id: String(item.id),
+      item_title: item.name,
+      text: trimmed,
+      read: false,
     });
 
     setSending(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
   return (
@@ -154,7 +158,7 @@ function ChatModal({ conversationId, item, currentUser, otherUser, onClose }: Ch
             <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>
               {otherUser.displayName}
             </div>
-            <div style={{ fontSize: 12, color: "#64748b" }}> {item.name}</div>
+            <div style={{ fontSize: 12, color: "#64748b" }}>{item.name}</div>
           </div>
           <button
             onClick={onClose}
@@ -162,22 +166,19 @@ function ChatModal({ conversationId, item, currentUser, otherUser, onClose }: Ch
               background: "none", border: "none", fontSize: 20,
               cursor: "pointer", color: "#94a3b8", lineHeight: 1,
             }}
-          >×</button>
+          >x</button>
         </div>
 
         {/* Messages */}
         <div style={{
           flex: 1, overflowY: "auto", padding: "16px",
-          display: "flex", flexDirection: "column", gap: 4,
-          background: "#f8fafc",
+          display: "flex", flexDirection: "column", gap: 4, background: "#f8fafc",
         }}>
           {messages.length === 0 && (
             <div style={{
               flex: 1, display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "center",
-              gap: 8, color: "#94a3b8",
+              alignItems: "center", justifyContent: "center", gap: 8, color: "#94a3b8",
             }}>
-              <span style={{ fontSize: 32 }}>👋</span>
               <p style={{ fontSize: 13 }}>Say hi about <strong>{item.name}</strong></p>
             </div>
           )}
@@ -189,8 +190,7 @@ function ChatModal({ conversationId, item, currentUser, otherUser, onClose }: Ch
             return (
               <div key={msg.id} style={{
                 display: "flex", flexDirection: "column",
-                alignItems: isOwn ? "flex-end" : "flex-start",
-                marginBottom: 6,
+                alignItems: isOwn ? "flex-end" : "flex-start", marginBottom: 6,
               }}>
                 <div style={{
                   maxWidth: "75%", padding: "9px 13px",
@@ -198,9 +198,7 @@ function ChatModal({ conversationId, item, currentUser, otherUser, onClose }: Ch
                   background: isOwn ? "#2563eb" : "#fff",
                   color: isOwn ? "#fff" : "#0f172a",
                   fontSize: 14, lineHeight: 1.5, wordBreak: "break-word",
-                  boxShadow: isOwn
-                    ? "0 2px 8px rgba(37,99,235,0.2)"
-                    : "0 1px 4px rgba(0,0,0,0.08)",
+                  boxShadow: isOwn ? "0 2px 8px rgba(37,99,235,0.2)" : "0 1px 4px rgba(0,0,0,0.08)",
                 }}>
                   {msg.text}
                 </div>
@@ -221,7 +219,7 @@ function ChatModal({ conversationId, item, currentUser, otherUser, onClose }: Ch
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type a message…"
+            placeholder="Type a message..."
             style={{
               flex: 1, border: "1.5px solid #e2e8f0", borderRadius: 20,
               padding: "9px 14px", fontSize: 14, resize: "none",
@@ -240,14 +238,12 @@ function ChatModal({ conversationId, item, currentUser, otherUser, onClose }: Ch
               display: "flex", alignItems: "center", justifyContent: "center",
               flexShrink: 0, transition: "background 0.15s",
             }}
-          >↑</button>
+          >^</button>
         </div>
       </div>
     </div>
   );
 }
-
-// ─── Dashboard ────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const { items, updateItemStatus } = useItems();
@@ -298,7 +294,6 @@ export default function DashboardPage() {
       setIsReady(true);
       return;
     }
-
     const translateAndCache = async () => {
       const translations = [
         { key: "Found by:", setter: setFoundByText, cacheKey: "dash_foundBy" },
@@ -443,7 +438,7 @@ export default function DashboardPage() {
                           fontSize: "14px", fontWeight: 600,
                         }}
                       >
-                         Message Finder
+                        Message Finder
                       </button>
                     )}
                   </div>

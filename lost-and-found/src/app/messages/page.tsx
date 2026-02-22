@@ -12,6 +12,7 @@ interface Message {
   sender_id: string;
   sender_name: string;
   receiver_id: string;
+  receiver_name: string;
   item_id: string;
   item_title: string;
   text: string;
@@ -81,7 +82,7 @@ export default function MessagesPage() {
             otherUserId: isOwn ? msg.receiver_id : msg.sender_id,
             // Always use sender_name — if I sent it we need receiver name (not stored), so fall back
             otherUserName: isOwn
-              ? (msg.receiver_name || msg.receiver_id.slice(0, 8))
+              ? (msg.receiver_name || msg.receiver_id)
               : msg.sender_name,
             lastMessage: msg.text,
             lastMessageAt: msg.created_at,
@@ -170,6 +171,7 @@ export default function MessagesPage() {
       sender_id: user.id,
       sender_name: user.fullName || "Me",
       receiver_id: activeConv.otherUserId,
+      receiver_name: activeConv.otherUserName,
       item_id: activeConv.conversation_id.split("_")[0],
       item_title: activeConv.item_title,
       text: trimmed,
