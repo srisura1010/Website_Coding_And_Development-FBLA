@@ -154,7 +154,7 @@ function ChatModal({ conversationId, item, currentUser, otherUser, onClose }: Ch
             <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>
               {otherUser.displayName}
             </div>
-            <div style={{ fontSize: 12, color: "#64748b" }}>📦 {item.name}</div>
+            <div style={{ fontSize: 12, color: "#64748b" }}> {item.name}</div>
           </div>
           <button
             onClick={onClose}
@@ -443,7 +443,7 @@ export default function DashboardPage() {
                           fontSize: "14px", fontWeight: 600,
                         }}
                       >
-                        💬 Message Finder
+                         Message Finder
                       </button>
                     )}
                   </div>
