@@ -243,7 +243,7 @@ export default function MessagesPage() {
                   )}
                 </div>
                 <div style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, marginTop: 1 }}>
-                  📦 {conv.item_title}
+                   {conv.item_title}
                 </div>
                 <div style={{
                   fontSize: 13, color: "#64748b", marginTop: 1,
@@ -285,7 +285,7 @@ export default function MessagesPage() {
                 <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>
                   {activeConv?.otherUserName}
                 </div>
-                <div style={{ fontSize: 12, color: "#64748b" }}>📦 {activeConv?.item_title}</div>
+                <div style={{ fontSize: 12, color: "#64748b" }}> {activeConv?.item_title}</div>
               </div>
             </div>
 

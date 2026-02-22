@@ -211,7 +211,7 @@ export default function Navbar() {
                 onClick={() => { setUnreadCount(0); router.push("/messages"); }}
                 style={{ position: "relative" }}
               >
-                💬 Messages
+                 Messages
                 {unreadCount > 0 && (
                   <span style={{
                     position: "absolute", top: -6, right: -8,
