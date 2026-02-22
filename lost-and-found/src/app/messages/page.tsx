@@ -201,7 +201,7 @@ export default function MessagesPage() {
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#0f172a" }}>Messages</h2>
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto" }}>
+        <div aria-live="polite" aria-relevant="additions" role="log" style={{ flex: 1, overflowY: "auto" }}>
           {conversations.length === 0 && (
             <div style={{ padding: 32, textAlign: "center", color: "#94a3b8", fontSize: 14 }}>
               <div style={{ fontSize: 36, marginBottom: 8 }}>💬</div>

@@ -27,9 +27,9 @@ export default function Home() {
   
   const [connectingText, setConnectingText] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem(`home_connecting_${language}`) || "Connecting student, staff, and schools and reuniting them with their lost items";
+      return localStorage.getItem(`home_connecting_${language}`) || "Connecting students, staff, and schools and reuniting them with their lost items";
     }
-    return "Connecting student, staff, and schools and reuniting them with their lost items";
+    return "Connecting students, staff, and schools and reuniting them with their lost items";
   });
   
   const [browseText, setBrowseText] = useState(() => {
@@ -134,7 +134,7 @@ export default function Home() {
     if (language === "en") {
       setLostText("Lost Something?");
       setDontPanicText("Don't Panic.");
-      setConnectingText("Connecting student, staff, and schools and reuniting them with their lost items");
+      setConnectingText("Connecting students, staff, and schools and reuniting them with their lost items");
       setBrowseText("Browse Lost Items");
       setReportText("Report a Lost Item");
       setCard1Title("One Place for Everything");
@@ -157,7 +157,7 @@ export default function Home() {
       const translations = [
         { key: "Lost Something?", setter: setLostText, cacheKey: "home_lost" },
         { key: "Don't Panic.", setter: setDontPanicText, cacheKey: "home_panic" },
-        { key: "Connecting student, staff, and schools and reuniting them with their lost items", setter: setConnectingText, cacheKey: "home_connecting" },
+        { key: "Connecting students, staff, and schools and reuniting them with their lost items", setter: setConnectingText, cacheKey: "home_connecting" },
         { key: "Browse Lost Items", setter: setBrowseText, cacheKey: "home_browse" },
         { key: "Report a Lost Item", setter: setReportText, cacheKey: "home_report" },
         { key: "One Place for Everything", setter: setCard1Title, cacheKey: "home_card1Title" },
@@ -225,74 +225,74 @@ export default function Home() {
       <div className="carousel relative z-10">
         <div className="track">
           <div className="card">
-            <span className="card-icon"><IoFolder className="text-blue-500" /></span>
+            <article className="card-icon"><IoFolder className="text-blue-500" focusable="false"/></article>
             <h3 className="card-title">{card1Title}</h3>
             <p className="card-body">{card1Body}</p>
           </div>
 
           <div className="card">
-            <span className="card-icon"><FaSchool className="text-blue-500" /></span>
+            <article className="card-icon"><FaSchool className="text-blue-500" focusable="false" /></article>
             <h3 className="card-title">{card2Title}</h3>
             <p className="card-body">{card2Body}</p>
           </div>
 
           <div className="card">
-            <span className="card-icon"><FaSearch className="text-blue-500" /></span>
+            <article className="card-icon"><FaSearch className="text-blue-500" focusable="false" /></article>
             <h3 className="card-title">{card3Title}</h3>
             <p className="card-body">{card3Body}</p>
           </div>
 
           <div className="card">
-            <span className="card-icon"><FaSlidersH className="text-blue-500" /></span>
+            <article className="card-icon"><FaSlidersH className="text-blue-500" focusable="false" /></article>
             <h3 className="card-title">{card4Title}</h3>
             <p className="card-body">{card4Body}</p>
           </div>
 
           <div className="card">
-            <span className="card-icon"><FaHandsHelping className="text-blue-500" /></span>
+            <article className="card-icon"><FaHandsHelping className="text-blue-500" focusable="false" /></article>
             <h3 className="card-title">{card5Title}</h3>
             <p className="card-body">{card5Body}</p>
           </div>
 
           <div className="card">
-            <span className="card-icon"><FaShieldAlt className="text-blue-500" /></span>
+            <article className="card-icon"><FaShieldAlt className="text-blue-500" focusable="false" /></article>
             <h3 className="card-title">{card6Title}</h3>
             <p className="card-body">{card6Body}</p>
           </div>
 
           {/* Duplicate set */}
           <div className="card">
-            <span className="card-icon"><IoFolder className="text-blue-500" /></span>
+            <article className="card-icon"><IoFolder className="text-blue-500" focusable="false"/></article>
             <h3 className="card-title">{card1Title}</h3>
             <p className="card-body">{card1Body}</p>
           </div>
 
           <div className="card">
-            <span className="card-icon"><FaSchool className="text-blue-500" /></span>
+            <article className="card-icon"><FaSchool className="text-blue-500" focusable="false" /></article>
             <h3 className="card-title">{card2Title}</h3>
             <p className="card-body">{card2Body}</p>
           </div>
 
           <div className="card">
-            <span className="card-icon"><FaSearch className="text-blue-500" /></span>
+            <article className="card-icon"><FaSearch className="text-blue-500" focusable="false" /></article>
             <h3 className="card-title">{card3Title}</h3>
             <p className="card-body">{card3Body}</p>
           </div>
 
           <div className="card">
-            <span className="card-icon"><FaSlidersH className="text-blue-500" /></span>
+            <article className="card-icon"><FaSlidersH className="text-blue-500" focusable="false" /></article>
             <h3 className="card-title">{card4Title}</h3>
             <p className="card-body">{card4Body}</p>
           </div>
 
           <div className="card">
-            <span className="card-icon"><FaHandsHelping className="text-blue-500" /></span>
+            <article className="card-icon"><FaHandsHelping className="text-blue-500" focusable="false" /></article>
             <h3 className="card-title">{card5Title}</h3>
             <p className="card-body">{card5Body}</p>
           </div>
 
           <div className="card">
-            <span className="card-icon"><FaShieldAlt className="text-blue-500" /></span>
+            <article className="card-icon"><FaShieldAlt className="text-blue-500" focusable="false" /></article>
             <h3 className="card-title">{card6Title}</h3>
             <p className="card-body">{card6Body}</p>
           </div>

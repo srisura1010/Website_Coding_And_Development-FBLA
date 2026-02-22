@@ -378,7 +378,7 @@ export default function DashboardPage() {
 
   return (
     <div className="content dashboard-page">
-      <div className="items-container">
+      <div id="main-content" className="items-container">
         {items &&
           items
             .filter((i) => i.status !== "claimed")
