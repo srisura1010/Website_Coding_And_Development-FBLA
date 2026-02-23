@@ -11,7 +11,9 @@ interface TTSContextType {
 
 const TTSContext = createContext<TTSContextType | undefined>(undefined);
 
-export const TTSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const TTSProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const pathname = usePathname();
 
   // Persist TTS toggle
@@ -22,7 +24,9 @@ export const TTSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return false;
   });
 
-  const speechRef = useRef<SpeechSynthesis>(typeof window !== "undefined" ? window.speechSynthesis : null);
+  const speechRef = useRef<SpeechSynthesis>(
+    typeof window !== "undefined" ? window.speechSynthesis : null,
+  );
   const queueRef = useRef<string[]>([]);
   const speakingRef = useRef<boolean>(false);
 
@@ -65,7 +69,9 @@ export const TTSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     speakingRef.current = true;
-    const utterance = new SpeechSynthesisUtterance(next.trim().replace(/\s+/g, " "));
+    const utterance = new SpeechSynthesisUtterance(
+      next.trim().replace(/\s+/g, " "),
+    );
     utterance.rate = 1;
     utterance.pitch = 1;
 
@@ -99,7 +105,9 @@ export const TTSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     containers.forEach((container) => {
       let text = "";
       if (container.classList.contains("carousel")) {
-        const visibleSlide = container.querySelector(".slide:not([style*='display: none'])");
+        const visibleSlide = container.querySelector(
+          ".slide:not([style*='display: none'])",
+        );
         if (visibleSlide) text = extractText(visibleSlide);
       } else {
         text = extractText(container);
@@ -127,9 +135,12 @@ export const TTSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               let text = "";
 
               // Special handling for carousel slides
-              const carousel = node.closest(".carousel");
+              const element = node as Element;
+              const carousel = element.closest?.(".carousel");
               if (carousel) {
-                const visibleSlide = carousel.querySelector(".slide:not([style*='display: none'])");
+                const visibleSlide = carousel.querySelector(
+                  ".slide:not([style*='display: none'])",
+                );
                 if (visibleSlide) text = extractText(visibleSlide);
               } else {
                 text = extractText(node);
@@ -149,7 +160,9 @@ export const TTSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [enabled, pathname]);
 
   return (
-    <TTSContext.Provider value={{ enabled, setEnabled, announce, cancelSpeech }}>
+    <TTSContext.Provider
+      value={{ enabled, setEnabled, announce, cancelSpeech }}
+    >
       {children}
     </TTSContext.Provider>
   );
