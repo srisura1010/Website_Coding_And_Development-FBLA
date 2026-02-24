@@ -1,10 +1,10 @@
-// Place this file at: src/app/messages/page.tsx
 "use client";
 
 import { useEffect, useState, useRef } from "react";
 import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
+import { useSettings } from "@/context/SettingsContext";
 
 interface Message {
   id: number;
@@ -30,9 +30,31 @@ interface Conversation {
   unread: boolean;
 }
 
+async function t(text: string, language: string): Promise<string> {
+  if (language === "en") return text;
+  const cacheKey = `msg_ui_${language}_${text.slice(0, 40)}`;
+  const cached = localStorage.getItem(cacheKey);
+  if (cached) return cached;
+  try {
+    const res = await fetch("/api/translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, target: language }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const translated = data.translatedText || text;
+      localStorage.setItem(cacheKey, translated);
+      return translated;
+    }
+  } catch { /* keep original */ }
+  return text;
+}
+
 export default function MessagesPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
+  const { language } = useSettings();
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
@@ -40,6 +62,38 @@ export default function MessagesPage() {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // — UI string states —
+  const [isReady, setIsReady] = useState(false);
+  const [uiMessagesTitle, setUiMessagesTitle]           = useState("Messages");
+  const [uiNoConversations, setUiNoConversations]       = useState("No conversations yet.");
+  const [uiSelectConversation, setUiSelectConversation] = useState("Select a conversation to start chatting");
+  const [uiStartConversation, setUiStartConversation]   = useState("Start the conversation!");
+  const [uiTypePlaceholder, setUiTypePlaceholder]       = useState("Type a message…");
+
+  // Translate UI labels whenever language changes
+  useEffect(() => {
+    const translateUI = async () => {
+      setIsReady(false);
+      const [
+        messagesTitle, noConversations, selectConversation,
+        startConversation, typePlaceholder,
+      ] = await Promise.all([
+        t("Messages", language),
+        t("No conversations yet.", language),
+        t("Select a conversation to start chatting", language),
+        t("Start the conversation!", language),
+        t("Type a message…", language),
+      ]);
+      setUiMessagesTitle(messagesTitle);
+      setUiNoConversations(noConversations);
+      setUiSelectConversation(selectConversation);
+      setUiStartConversation(startConversation);
+      setUiTypePlaceholder(typePlaceholder);
+      setIsReady(true);
+    };
+    translateUI();
+  }, [language]);
 
   useEffect(() => {
     if (isLoaded && !user) router.push("/");
@@ -50,27 +104,18 @@ export default function MessagesPage() {
     if (!user) return;
 
     const fetchConversations = async () => {
-      // Fetch as sender
       const { data: sent } = await supabase
-        .from("chat_messages")
-        .select("*")
-        .eq("sender_id", user.id)
-        .order("created_at", { ascending: false });
+        .from("chat_messages").select("*")
+        .eq("sender_id", user.id).order("created_at", { ascending: false });
 
-      // Fetch as receiver
       const { data: received } = await supabase
-        .from("chat_messages")
-        .select("*")
-        .eq("receiver_id", user.id)
-        .order("created_at", { ascending: false });
+        .from("chat_messages").select("*")
+        .eq("receiver_id", user.id).order("created_at", { ascending: false });
 
       const all = [...(sent ?? []), ...(received ?? [])];
-      // Sort combined by newest first
       all.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
       if (!all.length) return;
 
-      // Group into conversations — keep only the latest message per conversation
       const convMap = new Map<string, Conversation>();
       for (const msg of all) {
         if (!convMap.has(msg.conversation_id)) {
@@ -78,60 +123,75 @@ export default function MessagesPage() {
           convMap.set(msg.conversation_id, {
             conversation_id: msg.conversation_id,
             item_title: msg.item_title,
-            // If I sent it, other person is receiver; if I received it, other is sender
             otherUserId: isOwn ? msg.receiver_id : msg.sender_id,
-            // Always use sender_name — if I sent it we need receiver name (not stored), so fall back
-            otherUserName: isOwn
-              ? (msg.receiver_name || msg.receiver_id)
-              : msg.sender_name,
+            otherUserName: isOwn ? (msg.receiver_name || msg.receiver_id) : msg.sender_name,
             lastMessage: msg.text,
             lastMessageAt: msg.created_at,
             unread: !msg.read && msg.receiver_id === user.id,
           });
         }
       }
-      setConversations(Array.from(convMap.values()));
+
+      // Translate item titles and last message previews for the sidebar
+      const convList = Array.from(convMap.values());
+      if (language !== "en") {
+        await Promise.all(
+          convList.map(async (conv) => {
+            const [title, lastMsg] = await Promise.all([
+              t(conv.item_title, language),
+              t(conv.lastMessage, language),
+            ]);
+            conv.item_title = title;
+            conv.lastMessage = lastMsg;
+          })
+        );
+      }
+
+      setConversations(convList);
     };
 
     fetchConversations();
 
-    // Realtime: re-fetch on new incoming message
     const channel = supabase
       .channel("messages-page-convos")
       .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "chat_messages",
+        event: "INSERT", schema: "public", table: "chat_messages",
         filter: `receiver_id=eq.${user.id}`,
       }, () => fetchConversations())
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user, language]);
 
-  // Load messages for active conversation
+  // Load messages for active conversation + translate them
   useEffect(() => {
     if (!activeConvId || !user) return;
 
     const fetchMessages = async () => {
       const { data } = await supabase
-        .from("chat_messages")
-        .select("*")
-        .eq("conversation_id", activeConvId)
-        .order("created_at", { ascending: true });
-      if (data) setMessages(data);
+        .from("chat_messages").select("*")
+        .eq("conversation_id", activeConvId).order("created_at", { ascending: true });
 
-      // Mark as read
-      await supabase
-        .from("chat_messages")
-        .update({ read: true })
-        .eq("conversation_id", activeConvId)
-        .eq("receiver_id", user.id);
+      if (data) {
+        // Translate message text if not English
+        if (language !== "en") {
+          const translated = await Promise.all(
+            data.map(async (msg) => {
+              const translatedText = await t(msg.text, language);
+              return { ...msg, text: translatedText };
+            })
+          );
+          setMessages(translated);
+        } else {
+          setMessages(data);
+        }
+      }
+
+      await supabase.from("chat_messages").update({ read: true })
+        .eq("conversation_id", activeConvId).eq("receiver_id", user.id);
 
       setConversations((prev) =>
-        prev.map((c) =>
-          c.conversation_id === activeConvId ? { ...c, unread: false } : c
-        )
+        prev.map((c) => c.conversation_id === activeConvId ? { ...c, unread: false } : c)
       );
     };
 
@@ -140,20 +200,21 @@ export default function MessagesPage() {
     const channel = supabase
       .channel(`messages-page-chat:${activeConvId}`)
       .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "chat_messages",
+        event: "INSERT", schema: "public", table: "chat_messages",
         filter: `conversation_id=eq.${activeConvId}`,
-      }, (payload) => {
-        setMessages((prev) => [...prev, payload.new as Message]);
-        if ((payload.new as Message).receiver_id === user.id) {
-          supabase.from("chat_messages").update({ read: true }).eq("id", (payload.new as Message).id);
+      }, async (payload) => {
+        const newMsg = payload.new as Message;
+        // Translate incoming realtime message
+        const translatedText = language !== "en" ? await t(newMsg.text, language) : newMsg.text;
+        setMessages((prev) => [...prev, { ...newMsg, text: translatedText }]);
+        if (newMsg.receiver_id === user.id) {
+          supabase.from("chat_messages").update({ read: true }).eq("id", newMsg.id);
         }
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [activeConvId, user]);
+  }, [activeConvId, user, language]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -174,7 +235,7 @@ export default function MessagesPage() {
       receiver_name: activeConv.otherUserName,
       item_id: activeConv.conversation_id.split("_")[0],
       item_title: activeConv.item_title,
-      text: trimmed,
+      text: trimmed, // always store original in DB
       read: false,
     });
     setSending(false);
@@ -184,7 +245,7 @@ export default function MessagesPage() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
-  if (!isLoaded || !user) return null;
+  if (!isLoaded || !user || !isReady) return null;
 
   return (
     <div style={{
@@ -198,14 +259,16 @@ export default function MessagesPage() {
         overflow: "hidden",
       }}>
         <div style={{ padding: "18px 16px 12px", borderBottom: "1px solid #f1f5f9" }}>
-          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#0f172a" }}>Messages</h2>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#0f172a" }}>
+            {uiMessagesTitle}
+          </h2>
         </div>
 
         <div aria-live="polite" aria-relevant="additions" role="log" style={{ flex: 1, overflowY: "auto" }}>
           {conversations.length === 0 && (
             <div style={{ padding: 32, textAlign: "center", color: "#94a3b8", fontSize: 14 }}>
               <div style={{ fontSize: 36, marginBottom: 8 }}>💬</div>
-              No conversations yet.
+              {uiNoConversations}
             </div>
           )}
           {conversations.map((conv) => (
@@ -243,7 +306,7 @@ export default function MessagesPage() {
                   )}
                 </div>
                 <div style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, marginTop: 1 }}>
-                   {conv.item_title}
+                  {conv.item_title}
                 </div>
                 <div style={{
                   fontSize: 13, color: "#64748b", marginTop: 1,
@@ -266,7 +329,7 @@ export default function MessagesPage() {
             alignItems: "center", justifyContent: "center", color: "#94a3b8",
           }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>💬</div>
-            <p>Select a conversation to start chatting</p>
+            <p>{uiSelectConversation}</p>
           </div>
         ) : (
           <>
@@ -285,7 +348,7 @@ export default function MessagesPage() {
                 <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>
                   {activeConv?.otherUserName}
                 </div>
-                <div style={{ fontSize: 12, color: "#64748b" }}> {activeConv?.item_title}</div>
+                <div style={{ fontSize: 12, color: "#64748b" }}>{activeConv?.item_title}</div>
               </div>
             </div>
 
@@ -299,7 +362,7 @@ export default function MessagesPage() {
                   alignItems: "center", justifyContent: "center", color: "#94a3b8",
                 }}>
                   <span style={{ fontSize: 32 }}>👋</span>
-                  <p style={{ fontSize: 13 }}>Start the conversation!</p>
+                  <p style={{ fontSize: 13 }}>{uiStartConversation}</p>
                 </div>
               )}
               {messages.map((msg) => {
@@ -338,7 +401,7 @@ export default function MessagesPage() {
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Type a message…"
+                placeholder={uiTypePlaceholder}
                 style={{
                   flex: 1, border: "1.5px solid #e2e8f0", borderRadius: 20,
                   padding: "9px 14px", fontSize: 14, resize: "none",
