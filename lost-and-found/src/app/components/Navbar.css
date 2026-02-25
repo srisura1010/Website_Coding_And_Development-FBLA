@@ -50,17 +50,15 @@ body {
   white-space: nowrap;
 }
 
-/* Make sure the link itself gets no underline and correct color */
-.logo, 
-.logo:link,      /* unvisited link */
-.logo:visited,   /* visited link */
-.logo:hover, 
+.logo,
+.logo:link,
+.logo:visited,
+.logo:hover,
 .logo:active {
-  color: white;            /* or whatever color you want */
-  text-decoration: none;   /* remove underline */
+  color: white;
+  text-decoration: none;
   cursor: pointer;
 }
-
 
 .logo:hover {
   cursor: pointer;
@@ -103,21 +101,19 @@ body {
   padding: 0.45rem 0.9rem;
   border-radius: 6px;
   font-size: 0.85rem;
-  background-color: #ffd814; /* yellow */
-  color: #1f1f1f; /* dark text */
+  background-color: #ffd814;
+  color: #1f1f1f;
   font-weight: 600;
-  border: 1px solid #ffd814; /* optional, match background for clean transition */
+  border: 1px solid #ffd814;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
 }
 
 .nav-links .sign-up:hover {
-  background-color: #1f1f1f; /* dark background on hover */
-  color: #ffd814; /* yellow text on hover */
-  transform: translateY(-1px); /* optional slight lift for snappy effect */
+  background-color: #1f1f1f;
+  color: #ffd814;
+  transform: translateY(-1px);
 }
-
-
 
 /* ===== ADD ITEM BUTTON ===== */
 .add-btn {
@@ -196,28 +192,10 @@ body {
   transform: translateY(-1px);
 }
 
-/* ===== MOBILE ===== */
-@media (max-width: 768px) {
-  .navbar {
-    padding: 0.75rem 1.25rem;
-  }
-
-  .nav-links {
-    gap: 1.1rem;
-  }
-
-  .nav-links .dashboard-link,
-  .nav-links .sign-up {
-    font-size: 0.9rem;
-  }
-}
-
-
-
 /* ===== SETTINGS ICON BUTTON ===== */
 .settings-icon-btn {
   background: transparent;
-  border: none;                /* removes inherited border */
+  border: none;
   padding: 6px;
   display: flex;
   align-items: center;
@@ -228,13 +206,11 @@ body {
   transition: background-color 0.2s ease, transform 0.15s ease;
 }
 
-/* Hover effect */
 .settings-icon-btn:hover {
   background-color: rgba(255, 255, 255, 0.1);
-  transform: rotate(30deg);   /* optional cool spin effect */
+  transform: rotate(30deg);
 }
 
-/* Optional: active state */
 .settings-icon-btn:active {
   transform: scale(0.95);
 }
@@ -243,12 +219,10 @@ body {
 .settings-dropdown {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4); /* subtle dim background */
-
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   justify-content: center;
   align-items: center;
-
   z-index: 2000;
 }
 
@@ -260,13 +234,10 @@ body {
   max-width: 90%;
   padding: 2rem 2.5rem;
   border-radius: 14px;
-
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-
   animation: fadeIn 0.2s ease;
 }
 
-/* ===== TITLE ===== */
 .settings-panel h2 {
   font-size: 1.5rem;
   font-weight: 600;
@@ -274,7 +245,6 @@ body {
   color: #111827;
 }
 
-/* ===== SECTION LABEL ===== */
 .settings-panel h4 {
   font-size: 0.95rem;
   font-weight: 600;
@@ -284,14 +254,12 @@ body {
   letter-spacing: 0.5px;
 }
 
-/* ===== OPTIONS CONTAINER ===== */
 .theme-options {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
-/* ===== OPTION BUTTON ===== */
 .theme-options button {
   background: #f3f4f6;
   border: 1px solid #e5e7eb;
@@ -301,7 +269,6 @@ body {
   font-weight: 500;
   font-size: 0.95rem;
   color: #111827;
-
   transition: background 0.15s ease, border 0.15s ease;
 }
 
@@ -309,24 +276,280 @@ body {
   background: #e5e7eb;
 }
 
-/* Active state */
 .theme-options button.active {
   background: #111827;
   color: white;
   border-color: #111827;
 }
 
-/* ===== SIMPLE FADE IN ===== */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
+/* ===== SIDEBAR LAYOUT WRAPPER ===== */
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+/* ===== ADD ITEM SIDEBAR ===== */
+.add-item-sidebar {
+  width: 300px;
+  min-width: 300px;
+  background: #ffffff;
+  border-right: 1.5px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: width 0.3s ease, min-width 0.3s ease, opacity 0.3s ease;
+}
+
+.add-item-sidebar.closed {
+  width: 0;
+  min-width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.add-item-sidebar__inner {
+  width: 300px;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.add-item-sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.add-item-sidebar__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  font-family: "Poppins", sans-serif;
+}
+
+.add-item-sidebar__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 20px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.add-item-sidebar__close:hover {
+  color: #475569;
+  background: #f1f5f9;
+}
+
+.add-item-sidebar__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.add-item-sidebar__input {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 14px;
+  outline: none;
+  font-family: "Poppins", sans-serif;
+  color: #0f172a;
+  transition: border-color 0.15s ease;
+  width: 100%;
+}
+
+.add-item-sidebar__input:focus {
+  border-color: #2563eb;
+}
+
+.add-item-sidebar__textarea {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 14px;
+  outline: none;
+  font-family: "Poppins", sans-serif;
+  color: #0f172a;
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color 0.15s ease;
+  width: 100%;
+}
+
+.add-item-sidebar__textarea:focus {
+  border-color: #2563eb;
+}
+
+.add-item-sidebar__file-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  font-family: "Poppins", sans-serif;
+  margin-bottom: 2px;
+  display: block;
+}
+
+.add-item-sidebar__file-input {
+  font-size: 13px;
+  color: #475569;
+  font-family: "Poppins", sans-serif;
+  width: 100%;
+}
+
+.add-item-sidebar__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.add-item-sidebar__cancel {
+  flex: 1;
+  padding: 9px 0;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.add-item-sidebar__cancel:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.add-item-sidebar__submit {
+  flex: 1;
+  padding: 9px 0;
+  border-radius: 8px;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: background 0.15s ease;
+}
+
+.add-item-sidebar__submit:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.add-item-sidebar__submit:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+
+/* ===== FLOATING ADD BUTTON ===== */
+.add-item-fab {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 200;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.add-item-fab:hover {
+  background: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+}
+
+.add-item-fab__icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* ===== SEARCH BAR ===== */
+.search-bar-wrapper {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto 24px;
+  padding: 0 16px;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.search-bar__input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: #0f172a;
+  background: transparent;
+  font-family: "Poppins", sans-serif;
+}
+
+.search-bar__clear {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 16px;
+  padding: 0;
+  line-height: 1;
+}
+
+.search-bar__clear:hover {
+  color: #475569;
+}
+
+.search-bar__count {
+  margin: 6px 0 0 4px;
+  font-size: 12px;
+  color: #94a3b8;
+  font-family: "Poppins", sans-serif;
+}
+
+/* ===== DASHBOARD MAIN CONTENT ===== */
+.dashboard-main {
+  flex: 1;
+  min-width: 0;
+}
 
 /* ===== LIGHT MODE ===== */
 body.light .navbar {
   background-color: white;
-  color: #1f2937; /* dark text for light mode */
+  color: #1f2937;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
 }
 
@@ -336,7 +559,7 @@ body.light .navbar .logo {
 
 body.light .navbar .dashboard-link {
   color: #1f2937;
-  border: 1px solid #cbd5e1; /* light gray border */
+  border: 1px solid #cbd5e1;
   background-color: transparent;
 }
 
@@ -346,8 +569,8 @@ body.light .navbar .dashboard-link:hover {
 }
 
 body.light .navbar .sign-up {
-  background-color: #ffd814; /* keep yellow */
-  color: #1f1f1f; /* dark text */
+  background-color: #ffd814;
+  color: #1f1f1f;
   border: 1px solid #ffd814;
 }
 
@@ -357,7 +580,7 @@ body.light .navbar .sign-up:hover {
 }
 
 body.light .navbar .add-btn {
-  background-color: #16a34a; /* green for light mode */
+  background-color: #16a34a;
   color: white;
 }
 
@@ -372,7 +595,6 @@ body.light .navbar .settings-icon-btn {
 body.light .navbar .settings-icon-btn:hover {
   background-color: rgba(0, 0, 0, 0.05);
 }
-
 
 /* ===== HIGH CONTRAST MODE ===== */
 body.high-contrast .navbar {
@@ -426,8 +648,8 @@ body.high-contrast .navbar .settings-icon-btn:hover {
 }
 
 body.colorblind .navbar {
-  background-color: #0b3d91; /* dark blue background */
-  color: #ffdd44; /* high-contrast yellow text */
+  background-color: #0b3d91;
+  color: #ffdd44;
   box-shadow: none;
 }
 
@@ -438,7 +660,7 @@ body.colorblind .navbar .logo {
 body.colorblind .navbar .dashboard-link {
   color: #ffdd44;
   border: 1px solid #ffdd44;
-  background-color: #004080; /* slightly lighter blue for buttons */
+  background-color: #004080;
 }
 
 body.colorblind .navbar .dashboard-link:hover {
@@ -447,7 +669,7 @@ body.colorblind .navbar .dashboard-link:hover {
 }
 
 body.colorblind .navbar .sign-up {
-  background-color: #ffdd44; /* yellow for emphasis */
+  background-color: #ffdd44;
   color: #0b3d91;
   border: 1px solid #ffdd44;
 }
@@ -458,7 +680,7 @@ body.colorblind .navbar .sign-up:hover {
 }
 
 body.colorblind .navbar .add-btn {
-  background-color: #0066cc; /* distinct blue button */
+  background-color: #0066cc;
   color: #ffffff;
 }
 
@@ -474,62 +696,38 @@ body.colorblind .navbar .settings-icon-btn:hover {
   background-color: rgba(255, 221, 68, 0.15);
 }
 
-
-/* ===== MOBILE RESPONSIVE ===== */
+/* ===== MOBILE ===== */
 @media (max-width: 768px) {
   .navbar {
-    padding: 15px 10px;
-    flex-wrap: wrap;
-  }
-
-  .logo {
-    font-size: 1.3rem;
+    padding: 0.75rem 1.25rem;
   }
 
   .nav-links {
-    gap: 8px;
-    font-size: 0.85rem;
+    gap: 1.1rem;
   }
 
-  .dashboard-link,
-  .add-btn,
-  .sign-up {
-    padding: 8px 12px;
-    font-size: 0.85rem;
+  .nav-links .dashboard-link,
+  .nav-links .sign-up {
+    font-size: 0.9rem;
   }
 
-  .settings-icon-btn {
-    padding: 8px;
+  .add-item-sidebar,
+  .add-item-sidebar.closed {
+    display: none;
   }
 
-  /* Modal on mobile */
-  .modal-content {
-    width: 90%;
-    max-width: 400px;
-    padding: 20px;
-    margin: 20px;
+  .add-item-fab {
+    bottom: 20px;
+    right: 16px;
+    padding: 10px 16px;
+    font-size: 13px;
   }
 
-  .modal-content h3 {
-    font-size: 1.2rem;
-  }
-
-  .modal-content input,
-  .modal-content textarea {
-    font-size: 0.95rem;
-  }
-
-  .modal-actions {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .modal-actions button {
-    width: 100%;
+  .search-bar-wrapper {
+    padding: 0 8px;
   }
 }
 
-/* Very small screens */
 @media (max-width: 480px) {
   .navbar {
     padding: 10px 8px;
@@ -549,8 +747,29 @@ body.colorblind .navbar .settings-icon-btn:hover {
     font-size: 0.8rem;
   }
 
-  /* Hide text, show icon only on very small screens */
   .add-btn {
     font-size: 0.75rem;
   }
+}
+
+/* ===== MESSAGES NAV ITEM (unread badge) ===== */
+.messages-nav-item {
+  position: relative;
+}
+
+.unread-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #ef4444;
+  color: #fff;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
 }

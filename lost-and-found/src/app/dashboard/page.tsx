@@ -1,6 +1,6 @@
 "use client";
 
-import "../dashboard/dashboard.css";
+import "./dashboard.css";
 import { useItems } from "@/context/ItemsContext";
 import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabaseClient";
@@ -8,7 +8,11 @@ import emailjs from "@emailjs/browser";
 import { useSettings } from "@/context/SettingsContext";
 import { useEffect, useState, useRef } from "react";
 import { getConversationId } from "@/app/components/MessagingSystem";
+import { FaHandshakeAngle } from "react-icons/fa6";
 
+// ─────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────
 interface Message {
   id: number;
   conversation_id: string;
@@ -20,16 +24,36 @@ interface Message {
   text: string;
   created_at: string;
 }
-
 interface ChatUser { uid: string; displayName: string; }
 interface ChatItem { id: number; name: string; [key: string]: unknown; }
 interface ActiveChat { conversationId: string; item: ChatItem; otherUser: ChatUser; }
-interface ChatModalProps {
+
+// ─────────────────────────────────────────────
+// Tab definitions
+// To add a new tab:
+//   1. Add its id to TabId
+//   2. Add an entry to SIDEBAR_TABS
+//   3. Add a case in renderPanel() inside DashboardPage
+//      OR create a new component like AdminPanel below
+// ─────────────────────────────────────────────
+type TabId = "items" | "add-item" | "become-admin";
+
+const SIDEBAR_TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+  { id: "items",        label: "Items",           icon: "" },
+  { id: "add-item",     label: "Add Item",         icon: "＋" },
+  { id: "become-admin", label: "Become an Admin",  icon: <FaHandshakeAngle /> },
+  // ← Add new tabs here
+];
+
+// ─────────────────────────────────────────────
+// Chat Modal
+// ─────────────────────────────────────────────
+function ChatModal({
+  conversationId, item, currentUser, otherUser, onClose,
+}: {
   conversationId: string; item: ChatItem;
   currentUser: ChatUser; otherUser: ChatUser; onClose: () => void;
-}
-
-function ChatModal({ conversationId, item, currentUser, otherUser, onClose }: ChatModalProps) {
+}) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -44,7 +68,9 @@ function ChatModal({ conversationId, item, currentUser, otherUser, onClose }: Ch
     fetchMessages();
     const channel = supabase.channel(`chat:${conversationId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `conversation_id=eq.${conversationId}` },
-        (payload) => setMessages((prev) => prev.some((m) => m.id === (payload.new as Message).id) ? prev : [...prev, payload.new as Message]))
+        (payload) => setMessages((prev) =>
+          prev.some((m) => m.id === (payload.new as Message).id) ? prev : [...prev, payload.new as Message]
+        ))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [conversationId]);
@@ -56,8 +82,18 @@ function ChatModal({ conversationId, item, currentUser, otherUser, onClose }: Ch
     setSending(true);
     const trimmed = text.trim();
     setText("");
-    setMessages((prev) => [...prev, { id: Date.now(), conversation_id: conversationId, sender_id: currentUser.uid, sender_name: currentUser.displayName, receiver_id: otherUser.uid, item_id: String(item.id), item_title: item.name, text: trimmed, created_at: new Date().toISOString() }]);
-    await supabase.from("chat_messages").insert({ conversation_id: conversationId, sender_id: currentUser.uid, sender_name: currentUser.displayName, receiver_id: otherUser.uid, receiver_name: otherUser.displayName, item_id: String(item.id), item_title: item.name, text: trimmed, read: false });
+    setMessages((prev) => [...prev, {
+      id: Date.now(), conversation_id: conversationId,
+      sender_id: currentUser.uid, sender_name: currentUser.displayName,
+      receiver_id: otherUser.uid, item_id: String(item.id),
+      item_title: item.name, text: trimmed, created_at: new Date().toISOString(),
+    }]);
+    await supabase.from("chat_messages").insert({
+      conversation_id: conversationId, sender_id: currentUser.uid,
+      sender_name: currentUser.displayName, receiver_id: otherUser.uid,
+      receiver_name: otherUser.displayName, item_id: String(item.id),
+      item_title: item.name, text: trimmed, read: false,
+    });
     setSending(false);
   };
 
@@ -66,88 +102,183 @@ function ChatModal({ conversationId, item, currentUser, otherUser, onClose }: Ch
   };
 
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 480, height: 520, display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.2)", overflow: "hidden" }}>
-        <div style={{ padding: "14px 16px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 14 }}>{otherUser.displayName?.[0]?.toUpperCase() ?? "?"}</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>{otherUser.displayName}</div>
-            <div style={{ fontSize: 12, color: "#64748b" }}>{item.name}</div>
+    <div className="chat-modal-overlay" onClick={onClose}>
+      <div className="chat-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="chat-modal__header">
+          <div className="chat-modal__avatar">{otherUser.displayName?.[0]?.toUpperCase() ?? "?"}</div>
+          <div className="chat-modal__header-info">
+            <div className="chat-modal__name">{otherUser.displayName}</div>
+            <div className="chat-modal__item">{item.name}</div>
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#94a3b8" }}>x</button>
+          <button className="chat-modal__close" onClick={onClose}>×</button>
         </div>
-        <div style={{ flex: 1, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 4, background: "#f8fafc" }}>
-          {messages.length === 0 && <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8" }}><p style={{ fontSize: 13 }}>Say hi about <strong>{item.name}</strong></p></div>}
+        <div className="chat-modal__messages">
+          {messages.length === 0 && (
+            <div className="chat-modal__empty">
+              <p>Say hi about <strong>{item.name}</strong></p>
+            </div>
+          )}
           {messages.map((msg) => {
             const isOwn = msg.sender_id === currentUser.uid;
             return (
-              <div key={msg.id} style={{ display: "flex", flexDirection: "column", alignItems: isOwn ? "flex-end" : "flex-start", marginBottom: 6 }}>
-                <div style={{ maxWidth: "75%", padding: "9px 13px", borderRadius: isOwn ? "16px 16px 3px 16px" : "16px 16px 16px 3px", background: isOwn ? "#2563eb" : "#fff", color: isOwn ? "#fff" : "#0f172a", fontSize: 14, lineHeight: 1.5, wordBreak: "break-word", boxShadow: isOwn ? "0 2px 8px rgba(37,99,235,0.2)" : "0 1px 4px rgba(0,0,0,0.08)" }}>{msg.text}</div>
-                <span style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>{new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+              <div key={msg.id} className={`chat-bubble-wrapper${isOwn ? " chat-bubble-wrapper--own" : ""}`}>
+                <div className={`chat-bubble${isOwn ? " chat-bubble--own" : " chat-bubble--other"}`}>{msg.text}</div>
+                <span className="chat-bubble__time">
+                  {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </span>
               </div>
             );
           })}
           <div ref={bottomRef} />
         </div>
-        <div style={{ display: "flex", gap: 8, padding: "12px 14px", borderTop: "1px solid #e2e8f0", background: "#fff", alignItems: "flex-end" }}>
-          <textarea rows={1} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={handleKeyDown} placeholder="Type a message..." style={{ flex: 1, border: "1.5px solid #e2e8f0", borderRadius: 20, padding: "9px 14px", fontSize: 14, resize: "none", fontFamily: "inherit", outline: "none", lineHeight: 1.5, background: "#f8fafc", color: "#0f172a" }} />
-          <button onClick={handleSend} disabled={!text.trim() || sending} style={{ width: 38, height: 38, borderRadius: "50%", background: text.trim() ? "#2563eb" : "#e2e8f0", color: text.trim() ? "#fff" : "#94a3b8", border: "none", fontSize: 18, cursor: text.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>^</button>
+        <div className="chat-modal__input-row">
+          <textarea rows={1} value={text} onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown} placeholder="Type a message..." className="chat-modal__textarea" />
+          <button onClick={handleSend} disabled={!text.trim() || sending}
+            className={`chat-modal__send${text.trim() ? " chat-modal__send--active" : ""}`}>↑</button>
         </div>
       </div>
     </div>
   );
 }
 
+// ─────────────────────────────────────────────
+// Admin Panel — extracted so hooks work correctly
+// ─────────────────────────────────────────────
+function AdminPanel() {
+  const [adminForm, setAdminForm] = useState({ name: "", email: "", school: "", teacherId: "", extraInfo: "" });
+  const [adminFile, setAdminFile] = useState<File | null>(null);
+  const [adminUploading, setAdminUploading] = useState(false);
+  const [adminSuccess, setAdminSuccess] = useState(false);
+
+  const handleAdminSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdminUploading(true);
+    try {
+      let idImageUrl = "";
+      if (adminFile) {
+        const fileName = `admin_${Date.now()}_${adminFile.name}`;
+        const { error: uploadError } = await supabase.storage.from("item-images").upload(fileName, adminFile);
+        if (uploadError) { console.error(uploadError.message); return; }
+        const { data: urlData } = supabase.storage.from("item-images").getPublicUrl(fileName);
+        idImageUrl = urlData.publicUrl;
+      }
+      const { error } = await supabase.from("admin_requests").insert([{
+        name: adminForm.name,
+        email: adminForm.email,
+        school: adminForm.school,
+        teacher_id: adminForm.teacherId,
+        extra_info: adminForm.extraInfo,
+        id_image_url: idImageUrl,
+        status: "pending",
+      }]);
+      if (error) { console.error(error.message); return; }
+      setAdminSuccess(true);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAdminUploading(false);
+    }
+  };
+
+  return (
+    <div className="panel-content">
+      <div className="panel-section-title">Become an Admin</div>
+      {adminSuccess ? (
+        <div className="panel-success">
+          <span className="panel-success__icon">✓</span>
+          <p>Request submitted!</p>
+          <p className="panel-success__sub">We'll review and get back to you.</p>
+        </div>
+      ) : (
+        <form className="panel-form" onSubmit={handleAdminSubmit}>
+          <label className="panel-form__label">Full Name</label>
+          <input className="panel-form__input" type="text" placeholder="Jane Smith" required
+            value={adminForm.name} onChange={(e) => setAdminForm((p) => ({ ...p, name: e.target.value }))} />
+
+          <label className="panel-form__label">Email</label>
+          <input className="panel-form__input" type="email" placeholder="jane@school.edu" required
+            value={adminForm.email} onChange={(e) => setAdminForm((p) => ({ ...p, email: e.target.value }))} />
+
+          <label className="panel-form__label">School / Institution</label>
+          <input className="panel-form__input" type="text" placeholder="Lincoln High School" required
+            value={adminForm.school} onChange={(e) => setAdminForm((p) => ({ ...p, school: e.target.value }))} />
+
+          <label className="panel-form__label">Teacher ID / Staff Number</label>
+          <input className="panel-form__input" type="text" placeholder="T-00123" required
+            value={adminForm.teacherId} onChange={(e) => setAdminForm((p) => ({ ...p, teacherId: e.target.value }))} />
+
+          <label className="panel-form__label">Upload ID or Badge Photo</label>
+          <input className="panel-form__file" type="file" accept="image/*"
+            onChange={(e) => { if (e.target.files?.[0]) setAdminFile(e.target.files[0]); }} />
+          {adminFile && (
+            <div className="panel-form__preview-wrap">
+              <img src={URL.createObjectURL(adminFile)} alt="preview" className="panel-form__preview" />
+              <button type="button" className="panel-form__preview-remove" onClick={() => setAdminFile(null)}>×</button>
+            </div>
+          )}
+
+          <label className="panel-form__label">Anything else we should know?</label>
+          <textarea className="panel-form__textarea"
+            placeholder="e.g. I run the lost & found office, dept head since 2019..."
+            value={adminForm.extraInfo}
+            onChange={(e) => setAdminForm((p) => ({ ...p, extraInfo: e.target.value }))} />
+
+          <div className="admin-form__notice">
+            <span className="admin-form__notice-icon">ℹ️</span>
+            Submissions are reviewed manually. You'll be notified at your email.
+          </div>
+
+          <button type="submit" className="panel-form__submit" disabled={adminUploading}>
+            {adminUploading ? "Submitting..." : "Submit Request"}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Dashboard Page
+// ─────────────────────────────────────────────
 export default function DashboardPage() {
-  const { items, updateItemStatus } = useItems();
+  const { items, addItem, updateItemStatus } = useItems();
   const { user } = useUser();
   const { language } = useSettings();
 
+  const [activeTab, setActiveTab] = useState<TabId>("items");
   const [isReady, setIsReady] = useState(false);
   const [activeChat, setActiveChat] = useState<ActiveChat | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Filter items by search query against name, description, and ai_keywords
-  const filteredItems = searchQuery.trim()
-    ? (items ?? []).filter((item) => {
-        const q = searchQuery.toLowerCase();
-        const haystack = `${item.name} ${item.description} ${(item as any).aiKeywords ?? ""}`.toLowerCase();
-        return haystack.includes(q) ||
-          q.split(/\s+/).some((word) => haystack.includes(word));
-      })
-    : (items ?? []);
+  // Add Item form state
+  const [newItemName, setNewItemName] = useState("");
+  const [newItemDesc, setNewItemDesc] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  const [foundByText, setFoundByText] = useState(() => {
-    if (typeof window !== "undefined") return localStorage.getItem(`dash_foundBy_${language}`) || "Found by:";
-    return "Found by:";
-  });
-  const [retrieveText, setRetrieveText] = useState(() => {
-    if (typeof window !== "undefined") return localStorage.getItem(`dash_retrieve_${language}`) || "Retrieve";
-    return "Retrieve";
-  });
-  const [confirmText, setConfirmText] = useState(() => {
-    if (typeof window !== "undefined") return localStorage.getItem(`dash_confirm_${language}`) || "Confirm Claimed";
-    return "Confirm Claimed";
-  });
-  const [pendingText, setPendingText] = useState(() => {
-    if (typeof window !== "undefined") return localStorage.getItem(`dash_pending_${language}`) || "Item Claimed (Pending Confirmation)";
-    return "Item Claimed (Pending Confirmation)";
-  });
-  const [signInText, setSignInText] = useState(() => {
-    if (typeof window !== "undefined") return localStorage.getItem(`dash_signIn_${language}`) || "Please sign in to retrieve items";
-    return "Please sign in to retrieve items";
-  });
-  const [requestSentText, setRequestSentText] = useState(() => {
-    if (typeof window !== "undefined") return localStorage.getItem(`dash_requestSent_${language}`) || "Request sent! The owner has been notified.";
-    return "Request sent! The owner has been notified.";
-  });
-  const [markedClaimedText, setMarkedClaimedText] = useState(() => {
-    if (typeof window !== "undefined") return localStorage.getItem(`dash_markedClaimed_${language}`) || "Item officially marked as claimed!";
-    return "Item officially marked as claimed!";
-  });
+  // ── Translations ──────────────────────────
+  const [addItemText, setAddItemText]             = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_addItem_${language}`)     || "+ Add Item"                          : "+ Add Item");
+  const [reportFoundText, setReportFoundText]     = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_reportFound_${language}`)  || "Report Found Item"                  : "Report Found Item");
+  const [itemNameText, setItemNameText]           = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_itemName_${language}`)     || "Item Name"                          : "Item Name");
+  const [descriptionText, setDescriptionText]     = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_description_${language}`)  || "Description (location, time, etc)"  : "Description (location, time, etc)");
+  const [cancelText, setCancelText]               = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_cancel_${language}`)       || "Cancel"                             : "Cancel");
+  const [postItemText, setPostItemText]           = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_postItem_${language}`)     || "Post Item"                          : "Post Item");
+  const [uploadingText, setUploadingText]         = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_uploading_${language}`)    || "Uploading..."                       : "Uploading...");
+  const [foundByText, setFoundByText]             = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_foundBy_${language}`)     || "Found by:"                         : "Found by:");
+  const [retrieveText, setRetrieveText]           = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_retrieve_${language}`)    || "Retrieve"                          : "Retrieve");
+  const [confirmText, setConfirmText]             = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_confirm_${language}`)     || "Confirm Claimed"                   : "Confirm Claimed");
+  const [pendingText, setPendingText]             = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_pending_${language}`)     || "Item Claimed (Pending Confirmation)": "Item Claimed (Pending Confirmation)");
+  const [signInText, setSignInText]               = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_signIn_${language}`)      || "Please sign in to retrieve items"  : "Please sign in to retrieve items");
+  const [requestSentText, setRequestSentText]     = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_requestSent_${language}`) || "Request sent! The owner has been notified." : "Request sent! The owner has been notified.");
+  const [markedClaimedText, setMarkedClaimedText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_markedClaimed_${language}`)|| "Item officially marked as claimed!": "Item officially marked as claimed!");
 
   useEffect(() => {
     if (language === "en") {
+      setAddItemText("+ Add Item"); setReportFoundText("Report Found Item");
+      setItemNameText("Item Name"); setDescriptionText("Description (location, time, etc)");
+      setCancelText("Cancel"); setPostItemText("Post Item"); setUploadingText("Uploading...");
       setFoundByText("Found by:"); setRetrieveText("Retrieve"); setConfirmText("Confirm Claimed");
       setPendingText("Item Claimed (Pending Confirmation)"); setSignInText("Please sign in to retrieve items");
       setRequestSentText("Request sent! The owner has been notified."); setMarkedClaimedText("Item officially marked as claimed!");
@@ -155,13 +286,20 @@ export default function DashboardPage() {
     }
     const translateAndCache = async () => {
       const translations = [
-        { key: "Found by:", setter: setFoundByText, cacheKey: "dash_foundBy" },
-        { key: "Retrieve", setter: setRetrieveText, cacheKey: "dash_retrieve" },
-        { key: "Confirm Claimed", setter: setConfirmText, cacheKey: "dash_confirm" },
-        { key: "Item Claimed (Pending Confirmation)", setter: setPendingText, cacheKey: "dash_pending" },
-        { key: "Please sign in to retrieve items", setter: setSignInText, cacheKey: "dash_signIn" },
+        { key: "+ Add Item",                            setter: setAddItemText,         cacheKey: "nav_addItem" },
+        { key: "Report Found Item",                     setter: setReportFoundText,     cacheKey: "nav_reportFound" },
+        { key: "Item Name",                             setter: setItemNameText,         cacheKey: "nav_itemName" },
+        { key: "Description (location, time, etc)",     setter: setDescriptionText,     cacheKey: "nav_description" },
+        { key: "Cancel",                                setter: setCancelText,           cacheKey: "nav_cancel" },
+        { key: "Post Item",                             setter: setPostItemText,         cacheKey: "nav_postItem" },
+        { key: "Uploading...",                          setter: setUploadingText,        cacheKey: "nav_uploading" },
+        { key: "Found by:",                             setter: setFoundByText,          cacheKey: "dash_foundBy" },
+        { key: "Retrieve",                              setter: setRetrieveText,         cacheKey: "dash_retrieve" },
+        { key: "Confirm Claimed",                       setter: setConfirmText,          cacheKey: "dash_confirm" },
+        { key: "Item Claimed (Pending Confirmation)",   setter: setPendingText,          cacheKey: "dash_pending" },
+        { key: "Please sign in to retrieve items",      setter: setSignInText,           cacheKey: "dash_signIn" },
         { key: "Request sent! The owner has been notified.", setter: setRequestSentText, cacheKey: "dash_requestSent" },
-        { key: "Item officially marked as claimed!", setter: setMarkedClaimedText, cacheKey: "dash_markedClaimed" },
+        { key: "Item officially marked as claimed!",    setter: setMarkedClaimedText,    cacheKey: "dash_markedClaimed" },
       ];
       for (const { key, setter, cacheKey } of translations) {
         try {
@@ -174,11 +312,25 @@ export default function DashboardPage() {
     translateAndCache();
   }, [language]);
 
+  // ── Filtered items ────────────────────────
+  const filteredItems = searchQuery.trim()
+    ? (items ?? []).filter((item) => {
+        const q = searchQuery.toLowerCase();
+        const haystack = `${item.name} ${item.description} ${(item as any).aiKeywords ?? ""}`.toLowerCase();
+        return haystack.includes(q) || q.split(/\s+/).some((word) => haystack.includes(word));
+      })
+    : (items ?? []);
+
+  // ── Handlers ─────────────────────────────
   const handleRetrieve = async (item: any) => {
     if (!user) return alert(signInText);
     const { error } = await supabase.from("items").update({ status: "pending", claimer_email: user.primaryEmailAddress?.emailAddress }).eq("id", item.id);
     if (error) { console.error(error.message); return; }
-    emailjs.send(process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!, process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!, { author_name: item.authorName || "Owner", item_name: item.name, retriever_name: user.fullName || "A user", retriever_email: user.primaryEmailAddress?.emailAddress, to_email: item.authorEmail }, process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!).catch(console.error);
+    emailjs.send(process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!, process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!, {
+      author_name: item.authorName || "Owner", item_name: item.name,
+      retriever_name: user.fullName || "A user", retriever_email: user.primaryEmailAddress?.emailAddress,
+      to_email: item.authorEmail,
+    }, process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!).catch(console.error);
     updateItemStatus(item.id, "pending", user.primaryEmailAddress?.emailAddress);
     alert(requestSentText);
   };
@@ -199,91 +351,241 @@ export default function DashboardPage() {
     setActiveChat({ conversationId, item, otherUser: { uid: item.authorId, displayName: item.authorName || "Finder" } });
   };
 
-  if (!isReady) return <div className="content dashboard-page"><div className="items-container"></div></div>;
+  const extractKeywords = async (file: File): Promise<string> => {
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const res = await fetch("/api/image-search", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ imageBase64: base64, mimeType: file.type }) });
+      if (!res.ok) return "";
+      const { keywords } = await res.json();
+      return keywords ?? "";
+    } catch { return ""; }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newItemName || !newItemDesc || !selectedFile || !user) return;
+    setIsUploading(true);
+    try {
+      const fileName = `${Date.now()}_${selectedFile.name}`;
+      const [uploadResult, aiKeywords] = await Promise.all([
+        supabase.storage.from("item-images").upload(fileName, selectedFile),
+        extractKeywords(selectedFile),
+      ]);
+      if (uploadResult.error) { console.error("Upload error:", uploadResult.error.message); return; }
+      const { data: urlData } = supabase.storage.from("item-images").getPublicUrl(fileName);
+      const imageUrl = urlData.publicUrl;
+      const { data: insertedItem, error: insertError } = await supabase
+        .from("items")
+        .insert([{
+          name: newItemName, description: newItemDesc, image_url: imageUrl,
+          author_name: user.fullName || user.username || "Anonymous",
+          author_avatar: user.imageUrl, author_id: user.id,
+          author_email: user.primaryEmailAddress?.emailAddress,
+          status: "waiting", ai_keywords: aiKeywords,
+        }])
+        .select().single();
+      if (insertError) { console.error("Insert error:", insertError.message); return; }
+      addItem({
+        id: insertedItem.id, name: insertedItem.name, description: insertedItem.description,
+        image: insertedItem.image_url, authorName: insertedItem.author_name,
+        authorAvatar: insertedItem.author_avatar, status: insertedItem.status,
+        authorId: insertedItem.author_id, authorEmail: insertedItem.author_email || "",
+        aiKeywords: insertedItem.ai_keywords || "",
+      } as any);
+      setNewItemName(""); setNewItemDesc(""); setSelectedFile(null);
+      setUploadSuccess(true);
+      setTimeout(() => { setUploadSuccess(false); setActiveTab("items"); }, 1500);
+    } catch (err) {
+      console.error("Unexpected error:", err);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // ─────────────────────────────────────────
+  // renderPanel
+  // ─────────────────────────────────────────
+  const renderPanel = () => {
+    switch (activeTab) {
+
+      case "items":
+        return (
+          <div className="panel-content">
+            <div className="panel-section-title">All Items</div>
+            <div className="panel-search">
+              <svg className="panel-search__icon" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+              </svg>
+              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search items..." className="panel-search__input" />
+              {searchQuery && (
+                <button className="panel-search__clear" onClick={() => setSearchQuery("")}>×</button>
+              )}
+            </div>
+            {searchQuery && (
+              <p className="panel-search__count">
+                {filteredItems.filter((i) => i.status !== "claimed").length} result
+                {filteredItems.filter((i) => i.status !== "claimed").length !== 1 ? "s" : ""}
+              </p>
+            )}
+            <div className="panel-item-list">
+              {filteredItems.filter((i) => i.status !== "claimed").map((item) => (
+                <div key={item.id} className="panel-item-chip"
+                  onClick={() => document.getElementById(`item-${item.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })}>
+                  <img src={item.image} alt={item.name} className="panel-item-chip__img" />
+                  <div className="panel-item-chip__info">
+                    <span className="panel-item-chip__name">{item.name}</span>
+                    <span className={`panel-item-chip__status panel-item-chip__status--${item.status}`}>{item.status}</span>
+                  </div>
+                </div>
+              ))}
+              {filteredItems.filter((i) => i.status !== "claimed").length === 0 && (
+                <p className="panel-empty">No items found.</p>
+              )}
+            </div>
+          </div>
+        );
+
+      case "add-item":
+        return (
+          <div className="panel-content">
+            <div className="panel-section-title">{reportFoundText}</div>
+            {uploadSuccess ? (
+              <div className="panel-success">
+                <span className="panel-success__icon">✓</span>
+                <p>Item posted!</p>
+              </div>
+            ) : (
+              <form className="panel-form" onSubmit={handleSubmit}>
+                <label className="panel-form__label">Item Name</label>
+                <input type="text" placeholder={itemNameText} value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)} required className="panel-form__input" />
+                <label className="panel-form__label">Description</label>
+                <textarea placeholder={descriptionText} value={newItemDesc}
+                  onChange={(e) => setNewItemDesc(e.target.value)} required className="panel-form__textarea" />
+                <label className="panel-form__label">Photo</label>
+                <input type="file" accept="image/*"
+                  onChange={(e) => { if (e.target.files?.[0]) setSelectedFile(e.target.files[0]); }}
+                  required className="panel-form__file" />
+                {selectedFile && (
+                  <div className="panel-form__preview-wrap">
+                    <img src={URL.createObjectURL(selectedFile)} alt="preview" className="panel-form__preview" />
+                    <button type="button" className="panel-form__preview-remove" onClick={() => setSelectedFile(null)}>×</button>
+                  </div>
+                )}
+                <div className="panel-form__actions">
+                  <button type="button" className="panel-form__cancel"
+                    onClick={() => { setNewItemName(""); setNewItemDesc(""); setSelectedFile(null); setActiveTab("items"); }}>
+                    {cancelText}
+                  </button>
+                  <button type="submit" className="panel-form__submit" disabled={isUploading}>
+                    {isUploading ? uploadingText : postItemText}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        );
+
+      case "become-admin":
+        return <AdminPanel />;
+
+      // ← Add new cases here
+      // case "my-tab":
+      //   return <MyTabPanel />;
+
+      default:
+        return null;
+    }
+  };
+
+  if (!isReady) return (
+    <div className="dashboard-layout">
+      <div className="dashboard-sidebar" />
+      <div className="dashboard-main" />
+    </div>
+  );
 
   return (
-    <div className="content dashboard-page">
+    <div className="dashboard-layout">
 
-      {/* ── Search bar ── */}
-      <div style={{ width: "100%", maxWidth: 600, margin: "0 auto 24px", padding: "0 16px" }}>
-        <div style={{
-          display: "flex", alignItems: "center", gap: 10,
-          background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 12,
-          padding: "10px 16px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-        }}>
-          <svg width="16" height="16" fill="none" stroke="#94a3b8" strokeWidth="2" viewBox="0 0 24 24">
-            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-          </svg>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by item name, description, color, brand..."
-            style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: "#0f172a", background: "transparent", fontFamily: "inherit" }}
-          />
-          {searchQuery && (
-            <button onClick={() => setSearchQuery("")} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: 16, padding: 0, lineHeight: 1 }}>x</button>
-          )}
+      {/* ── Left Sidebar ── */}
+      <aside className="dashboard-sidebar">
+        <div className="sidebar-tabs">
+          {SIDEBAR_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              className={`sidebar-tab${activeTab === tab.id ? " sidebar-tab--active" : ""}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <span className="sidebar-tab__icon">{tab.icon}</span>
+              <span className="sidebar-tab__label">{tab.label}</span>
+              {activeTab === tab.id && <span className="sidebar-tab__pip" />}
+            </button>
+          ))}
         </div>
-        {searchQuery && (
-          <p style={{ margin: "6px 0 0 4px", fontSize: 12, color: "#94a3b8" }}>
-            {filteredItems.filter(i => i.status !== "claimed").length} result{filteredItems.filter(i => i.status !== "claimed").length !== 1 ? "s" : ""} found
-          </p>
-        )}
-      </div>
 
-      <div className="items-container">
-        {filteredItems
-          .filter((i) => i.status !== "claimed")
-          .map((item) => {
+        <div className="sidebar-panel" key={activeTab}>
+          {renderPanel()}
+        </div>
+      </aside>
+
+      {/* ── Main content ── */}
+      <main className="dashboard-main">
+        <div className="items-container">
+          {filteredItems.filter((i) => i.status !== "claimed").map((item) => {
             const currentStatus = item.status || "waiting";
             const isOwner = user?.id === item.authorId;
             return (
-              <div key={item.id} className="item-card">
+              <div key={item.id} id={`item-${item.id}`} className="item-card">
                 <img src={item.image} alt={item.name} className="item-image" />
                 <div className="item-info">
                   <h3>{item.name}</h3>
                   <p>{item.description}</p>
-                  <div className="posted-by" style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "10px", fontSize: "0.85rem", color: "#666" }}>
-                    {item.authorAvatar && <img src={item.authorAvatar} alt="User" style={{ width: "20px", height: "20px", borderRadius: "50%" }} />}
+                  <div className="posted-by">
+                    {item.authorAvatar && <img src={item.authorAvatar} alt="User" className="posted-by__avatar" />}
                     <span>{foundByText} {item.authorName || "Anonymous"}</span>
                   </div>
                 </div>
-                <div className="button-group" style={{ marginTop: "15px" }}>
+                <div className="button-group">
                   {currentStatus === "waiting" && (
                     <button className="retrieve-button" onClick={() => handleRetrieve(item)}>{retrieveText}</button>
                   )}
                   {currentStatus === "pending" && (isOwner ? (
-                    <button className="confirm-button" style={{ backgroundColor: "#28a745", color: "white", border: "none", padding: "10px 20px", borderRadius: "5px", cursor: "pointer" }} onClick={() => handleConfirmClaimed(item.id)}>{confirmText}</button>
+                    <button className="confirm-button" onClick={() => handleConfirmClaimed(item.id)}>{confirmText}</button>
                   ) : (
-                    <button className="pending-button" disabled style={{ backgroundColor: "#ccc", color: "#666", border: "none", padding: "10px 20px", borderRadius: "5px", cursor: "not-allowed" }}>{pendingText}</button>
+                    <button className="pending-button" disabled>{pendingText}</button>
                   ))}
                   {!isOwner && (
-                    <button onClick={() => handleOpenChat(item)} style={{ backgroundColor: "#2563eb", color: "white", border: "none", padding: "10px 20px", borderRadius: "5px", cursor: "pointer", marginTop: "8px", width: "100%", fontFamily: "inherit", fontSize: "14px", fontWeight: 600 }}>
-                      Message Finder
-                    </button>
+                    <button className="message-finder-button" onClick={() => handleOpenChat(item)}>Message Finder</button>
                   )}
                 </div>
               </div>
             );
           })}
-        {filteredItems.filter(i => i.status !== "claimed").length === 0 && searchQuery && (
-          <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "40px 0", color: "#94a3b8" }}>
-            <p style={{ fontSize: 15 }}>No items found for "{searchQuery}"</p>
-            <p style={{ fontSize: 13, marginTop: 4 }}>Try different keywords like color, type, or brand</p>
-          </div>
-        )}
-      </div>
+          {filteredItems.filter((i) => i.status !== "claimed").length === 0 && searchQuery && (
+            <div className="empty-state">
+              <p>No items found for "{searchQuery}"</p>
+              <p>Try different keywords like color, type, or brand</p>
+            </div>
+          )}
+        </div>
 
-      {activeChat && user && (
-        <ChatModal
-          conversationId={activeChat.conversationId}
-          item={activeChat.item}
-          currentUser={{ uid: user.id, displayName: user.fullName || "Me" }}
-          otherUser={activeChat.otherUser}
-          onClose={() => setActiveChat(null)}
-        />
-      )}
+        {activeChat && user && (
+          <ChatModal
+            conversationId={activeChat.conversationId}
+            item={activeChat.item}
+            currentUser={{ uid: user.id, displayName: user.fullName || "Me" }}
+            otherUser={activeChat.otherUser}
+            onClose={() => setActiveChat(null)}
+          />
+        )}
+      </main>
     </div>
   );
 }
