@@ -30,20 +30,10 @@ interface ActiveChat { conversationId: string; item: ChatItem; otherUser: ChatUs
 
 // ─────────────────────────────────────────────
 // Tab definitions
-// To add a new tab:
-//   1. Add its id to TabId
-//   2. Add an entry to SIDEBAR_TABS
-//   3. Add a case in renderPanel() inside DashboardPage
-//      OR create a new component like AdminPanel below
+// TabId includes "approve" but it only shows in the sidebar if you're
+// the owner — everyone else never sees it
 // ─────────────────────────────────────────────
-type TabId = "items" | "add-item" | "become-admin";
-
-const SIDEBAR_TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-  { id: "items",        label: "Items",           icon: "" },
-  { id: "add-item",     label: "Add Item",         icon: "＋" },
-  { id: "become-admin", label: "Become an Admin",  icon: <FaHandshakeAngle /> },
-  // ← Add new tabs here
-];
+type TabId = "items" | "add-item" | "become-admin" | "admin-login" | "approve";
 
 // ─────────────────────────────────────────────
 // Chat Modal
@@ -143,7 +133,7 @@ function ChatModal({
 }
 
 // ─────────────────────────────────────────────
-// Admin Panel — extracted so hooks work correctly
+// Become Admin Panel
 // ─────────────────────────────────────────────
 function AdminPanel() {
   const [adminForm, setAdminForm] = useState({ name: "", email: "", school: "", teacherId: "", extraInfo: "" });
@@ -164,13 +154,9 @@ function AdminPanel() {
         idImageUrl = urlData.publicUrl;
       }
       const { error } = await supabase.from("admin_requests").insert([{
-        name: adminForm.name,
-        email: adminForm.email,
-        school: adminForm.school,
-        teacher_id: adminForm.teacherId,
-        extra_info: adminForm.extraInfo,
-        id_image_url: idImageUrl,
-        status: "pending",
+        name: adminForm.name, email: adminForm.email, school: adminForm.school,
+        teacher_id: adminForm.teacherId, extra_info: adminForm.extraInfo,
+        id_image_url: idImageUrl, status: "pending",
       }]);
       if (error) { console.error(error.message); return; }
       setAdminSuccess(true);
@@ -195,19 +181,15 @@ function AdminPanel() {
           <label className="panel-form__label">Full Name</label>
           <input className="panel-form__input" type="text" placeholder="Jane Smith" required
             value={adminForm.name} onChange={(e) => setAdminForm((p) => ({ ...p, name: e.target.value }))} />
-
           <label className="panel-form__label">Email</label>
           <input className="panel-form__input" type="email" placeholder="jane@school.edu" required
             value={adminForm.email} onChange={(e) => setAdminForm((p) => ({ ...p, email: e.target.value }))} />
-
           <label className="panel-form__label">School / Institution</label>
           <input className="panel-form__input" type="text" placeholder="Lincoln High School" required
             value={adminForm.school} onChange={(e) => setAdminForm((p) => ({ ...p, school: e.target.value }))} />
-
           <label className="panel-form__label">Teacher ID / Staff Number</label>
           <input className="panel-form__input" type="text" placeholder="T-00123" required
             value={adminForm.teacherId} onChange={(e) => setAdminForm((p) => ({ ...p, teacherId: e.target.value }))} />
-
           <label className="panel-form__label">Upload ID or Badge Photo</label>
           <input className="panel-form__file" type="file" accept="image/*"
             onChange={(e) => { if (e.target.files?.[0]) setAdminFile(e.target.files[0]); }} />
@@ -217,22 +199,186 @@ function AdminPanel() {
               <button type="button" className="panel-form__preview-remove" onClick={() => setAdminFile(null)}>×</button>
             </div>
           )}
-
           <label className="panel-form__label">Anything else we should know?</label>
           <textarea className="panel-form__textarea"
             placeholder="e.g. I run the lost & found office, dept head since 2019..."
             value={adminForm.extraInfo}
             onChange={(e) => setAdminForm((p) => ({ ...p, extraInfo: e.target.value }))} />
-
           <div className="admin-form__notice">
             <span className="admin-form__notice-icon">ℹ️</span>
             Submissions are reviewed manually. You'll be notified at your email.
           </div>
-
           <button type="submit" className="panel-form__submit" disabled={adminUploading}>
             {adminUploading ? "Submitting..." : "Submit Request"}
           </button>
         </form>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Admin Login Panel
+// Teachers enter their emailed password here.
+// The code checks the admins table for a row matching
+// their logged-in email + the password they typed.
+// ─────────────────────────────────────────────
+function AdminLoginPanel({ onUnlock }: { onUnlock: () => void }) {
+  const { user } = useUser();
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [checking, setChecking] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+
+  const handleCheck = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChecking(true);
+    setError("");
+    const { data, error: dbError } = await supabase
+      .from("admins")
+      .select("id")
+      .eq("email", user?.primaryEmailAddress?.emailAddress)
+      .eq("password", password)
+      .single();
+    if (dbError || !data) {
+      setError("Incorrect password or not approved yet.");
+    } else {
+      setUnlocked(true);
+      onUnlock();
+    }
+    setChecking(false);
+  };
+
+  if (unlocked) {
+    return (
+      <div className="panel-content">
+        <div className="panel-success">
+          <span className="panel-success__icon">✓</span>
+          <p>Admin view unlocked!</p>
+          <p className="panel-success__sub">Delete buttons are now visible on all items.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="panel-content">
+      <div className="panel-section-title">Admin Access</div>
+      <p className="admin-login__hint">Enter the password from your approval email.</p>
+      <form className="panel-form" onSubmit={handleCheck}>
+        <label className="panel-form__label">Admin Password</label>
+        <input className="panel-form__input" type="password" placeholder="e.g. FINDR-JANE-X4K2"
+          value={password} onChange={(e) => setPassword(e.target.value)} required />
+        {error && <p className="admin-login__error">{error}</p>}
+        <button type="submit" className="panel-form__submit" disabled={checking}>
+          {checking ? "Checking..." : "Unlock Admin View"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Approve Panel — only YOU see this tab
+// When you click Approve:
+//   1. Calls the SQL function which generates a password
+//      and inserts the teacher into the admins table
+//   2. Reads that password back from the admins table
+//   3. Sends it to the teacher via EmailJS
+// ─────────────────────────────────────────────
+function ApprovePanel() {
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [sending, setSending] = useState<string | null>(null);
+
+  const loadRequests = async () => {
+    const { data } = await supabase
+      .from("admin_requests")
+      .select("*")
+      .eq("status", "pending");
+    setRequests(data ?? []);
+    setLoaded(true);
+  };
+
+  const handleApprove = async (req: any) => {
+    setSending(req.id);
+
+    // Step 1: call the SQL function — generates password,
+    // inserts into admins, marks request as approved
+    const { error: fnError } = await supabase.rpc("approve_admin", {
+      request_id: req.id,
+    });
+
+    if (fnError) {
+      alert("Error approving: " + fnError.message);
+      setSending(null);
+      return;
+    }
+
+    // Step 2: read back the generated password
+    const { data: adminRow, error: fetchError } = await supabase
+      .from("admins")
+      .select("password")
+      .eq("email", req.email)
+      .single();
+
+    if (fetchError || !adminRow) {
+      alert("Approved but couldn't fetch password — check admins table manually.");
+      setSending(null);
+      return;
+    }
+
+    // Step 3: send email via EmailJS
+    try {
+      await emailjs.send(
+        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!,
+        process.env.NEXT_PUBLIC_EMAILJS_ADMIN_TEMPLATE_ID!,
+        {
+          to_email: req.email,
+          admin_name: req.name,
+          admin_password: adminRow.password,
+        },
+        process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!
+      );
+      alert(`Done! Email sent to ${req.email}\nPassword: ${adminRow.password}`);
+    } catch (err) {
+      // Already approved and in DB — just show the password so you can send manually
+      alert(`Approved! Email failed.\nManually send password: ${adminRow.password}`);
+      console.error(err);
+    }
+
+    setRequests((prev) => prev.filter((r) => r.id !== req.id));
+    setSending(null);
+  };
+
+  return (
+    <div className="panel-content">
+      <div className="panel-section-title">Pending Requests</div>
+      {!loaded ? (
+        <button className="panel-form__submit" onClick={loadRequests}>Load Requests</button>
+      ) : requests.length === 0 ? (
+        <p className="panel-empty">No pending requests.</p>
+      ) : (
+        <div className="approve-list">
+          {requests.map((req) => (
+            <div key={req.id} className="approve-card">
+              <p className="approve-card__name">{req.name}</p>
+              <p className="approve-card__meta">{req.email}</p>
+              <p className="approve-card__meta">{req.school} · ID: {req.teacher_id}</p>
+              {req.extra_info && <p className="approve-card__extra">{req.extra_info}</p>}
+              {req.id_image_url && (
+                <img src={req.id_image_url} alt="ID" className="approve-card__img" />
+              )}
+              <button
+                className="panel-form__submit"
+                onClick={() => handleApprove(req)}
+                disabled={sending === req.id}
+              >
+                {sending === req.id ? "Approving..." : "Approve & Send Email"}
+              </button>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -246,10 +392,15 @@ export default function DashboardPage() {
   const { user } = useUser();
   const { language } = useSettings();
 
+  // isOwner is true only if the logged-in Clerk user ID matches
+  // the NEXT_PUBLIC_OWNER_CLERK_ID env variable — i.e. only you
+  const isOwner = user?.id === process.env.NEXT_PUBLIC_OWNER_CLERK_ID;
+
   const [activeTab, setActiveTab] = useState<TabId>("items");
   const [isReady, setIsReady] = useState(false);
   const [activeChat, setActiveChat] = useState<ActiveChat | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Add Item form state
   const [newItemName, setNewItemName] = useState("");
@@ -274,6 +425,15 @@ export default function DashboardPage() {
   const [requestSentText, setRequestSentText]     = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_requestSent_${language}`) || "Request sent! The owner has been notified." : "Request sent! The owner has been notified.");
   const [markedClaimedText, setMarkedClaimedText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_markedClaimed_${language}`)|| "Item officially marked as claimed!": "Item officially marked as claimed!");
 
+  // SIDEBAR_TABS — the "approve" tab only appears if you're the owner
+  const SIDEBAR_TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+    { id: "items",        label: "Items",           icon: "📦" },
+    { id: "add-item",     label: "Add Item",         icon: "＋" },
+    { id: "become-admin", label: "Become an Admin",  icon: <FaHandshakeAngle /> },
+    { id: "admin-login",  label: "Admin",            icon: "🔐" },
+    ...(isOwner ? [{ id: "approve" as TabId, label: "Approve Admins", icon: "✅" }] : []),
+  ];
+
   useEffect(() => {
     if (language === "en") {
       setAddItemText("+ Add Item"); setReportFoundText("Report Found Item");
@@ -286,20 +446,20 @@ export default function DashboardPage() {
     }
     const translateAndCache = async () => {
       const translations = [
-        { key: "+ Add Item",                            setter: setAddItemText,         cacheKey: "nav_addItem" },
-        { key: "Report Found Item",                     setter: setReportFoundText,     cacheKey: "nav_reportFound" },
-        { key: "Item Name",                             setter: setItemNameText,         cacheKey: "nav_itemName" },
-        { key: "Description (location, time, etc)",     setter: setDescriptionText,     cacheKey: "nav_description" },
-        { key: "Cancel",                                setter: setCancelText,           cacheKey: "nav_cancel" },
-        { key: "Post Item",                             setter: setPostItemText,         cacheKey: "nav_postItem" },
-        { key: "Uploading...",                          setter: setUploadingText,        cacheKey: "nav_uploading" },
-        { key: "Found by:",                             setter: setFoundByText,          cacheKey: "dash_foundBy" },
-        { key: "Retrieve",                              setter: setRetrieveText,         cacheKey: "dash_retrieve" },
-        { key: "Confirm Claimed",                       setter: setConfirmText,          cacheKey: "dash_confirm" },
-        { key: "Item Claimed (Pending Confirmation)",   setter: setPendingText,          cacheKey: "dash_pending" },
-        { key: "Please sign in to retrieve items",      setter: setSignInText,           cacheKey: "dash_signIn" },
-        { key: "Request sent! The owner has been notified.", setter: setRequestSentText, cacheKey: "dash_requestSent" },
-        { key: "Item officially marked as claimed!",    setter: setMarkedClaimedText,    cacheKey: "dash_markedClaimed" },
+        { key: "+ Add Item",                                  setter: setAddItemText,         cacheKey: "nav_addItem" },
+        { key: "Report Found Item",                           setter: setReportFoundText,     cacheKey: "nav_reportFound" },
+        { key: "Item Name",                                   setter: setItemNameText,         cacheKey: "nav_itemName" },
+        { key: "Description (location, time, etc)",           setter: setDescriptionText,     cacheKey: "nav_description" },
+        { key: "Cancel",                                      setter: setCancelText,           cacheKey: "nav_cancel" },
+        { key: "Post Item",                                   setter: setPostItemText,         cacheKey: "nav_postItem" },
+        { key: "Uploading...",                                setter: setUploadingText,        cacheKey: "nav_uploading" },
+        { key: "Found by:",                                   setter: setFoundByText,          cacheKey: "dash_foundBy" },
+        { key: "Retrieve",                                    setter: setRetrieveText,         cacheKey: "dash_retrieve" },
+        { key: "Confirm Claimed",                             setter: setConfirmText,          cacheKey: "dash_confirm" },
+        { key: "Item Claimed (Pending Confirmation)",         setter: setPendingText,          cacheKey: "dash_pending" },
+        { key: "Please sign in to retrieve items",            setter: setSignInText,           cacheKey: "dash_signIn" },
+        { key: "Request sent! The owner has been notified.",  setter: setRequestSentText,      cacheKey: "dash_requestSent" },
+        { key: "Item officially marked as claimed!",          setter: setMarkedClaimedText,    cacheKey: "dash_markedClaimed" },
       ];
       for (const { key, setter, cacheKey } of translations) {
         try {
@@ -338,6 +498,12 @@ export default function DashboardPage() {
   const handleConfirmClaimed = async (itemId: number) => {
     const { error } = await supabase.from("items").update({ status: "claimed" }).eq("id", itemId);
     if (!error) { updateItemStatus(itemId, "claimed"); alert(markedClaimedText); }
+  };
+
+  const handleDelete = async (itemId: number) => {
+    if (!confirm("Delete this item permanently?")) return;
+    const { error } = await supabase.from("items").delete().eq("id", itemId);
+    if (!error) updateItemStatus(itemId, "claimed");
   };
 
   const handleOpenChat = (item: any) => {
@@ -495,6 +661,12 @@ export default function DashboardPage() {
       case "become-admin":
         return <AdminPanel />;
 
+      case "admin-login":
+        return <AdminLoginPanel onUnlock={() => setIsAdmin(true)} />;
+
+      case "approve":
+        return <ApprovePanel />;
+
       // ← Add new cases here
       // case "my-tab":
       //   return <MyTabPanel />;
@@ -537,12 +709,20 @@ export default function DashboardPage() {
 
       {/* ── Main content ── */}
       <main className="dashboard-main">
+        {isAdmin && (
+          <div className="admin-banner">
+            <span className="admin-banner__icon">🔐</span>
+            <span>Admin mode active — you can delete any item</span>
+            <button className="admin-banner__exit" onClick={() => setIsAdmin(false)}>Exit Admin</button>
+          </div>
+        )}
+
         <div className="items-container">
           {filteredItems.filter((i) => i.status !== "claimed").map((item) => {
             const currentStatus = item.status || "waiting";
-            const isOwner = user?.id === item.authorId;
+            const isItemOwner = user?.id === item.authorId;
             return (
-              <div key={item.id} id={`item-${item.id}`} className="item-card">
+              <div key={item.id} id={`item-${item.id}`} className={`item-card${isAdmin ? " item-card--admin" : ""}`}>
                 <img src={item.image} alt={item.name} className="item-image" />
                 <div className="item-info">
                   <h3>{item.name}</h3>
@@ -556,13 +736,16 @@ export default function DashboardPage() {
                   {currentStatus === "waiting" && (
                     <button className="retrieve-button" onClick={() => handleRetrieve(item)}>{retrieveText}</button>
                   )}
-                  {currentStatus === "pending" && (isOwner ? (
+                  {currentStatus === "pending" && (isItemOwner ? (
                     <button className="confirm-button" onClick={() => handleConfirmClaimed(item.id)}>{confirmText}</button>
                   ) : (
                     <button className="pending-button" disabled>{pendingText}</button>
                   ))}
-                  {!isOwner && (
+                  {!isItemOwner && (
                     <button className="message-finder-button" onClick={() => handleOpenChat(item)}>Message Finder</button>
+                  )}
+                  {isAdmin && (
+                    <button className="delete-button" onClick={() => handleDelete(item.id)}>Delete Item</button>
                   )}
                 </div>
               </div>
