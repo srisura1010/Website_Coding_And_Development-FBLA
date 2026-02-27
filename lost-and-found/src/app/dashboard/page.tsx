@@ -383,8 +383,6 @@ function AdminPanel() {
 
 // ─────────────────────────────────────────────
 // Admin Login Panel
-// On success, saves isAdmin to localStorage so it persists
-// across refreshes and page navigation.
 // ─────────────────────────────────────────────
 function AdminLoginPanel({ onUnlock }: { onUnlock: () => void }) {
   const { user } = useUser();
@@ -469,7 +467,6 @@ export default function DashboardPage() {
   const [activeChat, setActiveChat] = useState<ActiveChat | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // isAdmin is read from localStorage on load so it persists across refreshes
   const [isAdmin, setIsAdmin] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("findr_is_admin") === "true";
@@ -477,7 +474,6 @@ export default function DashboardPage() {
     return false;
   });
 
-  // Keep localStorage in sync whenever isAdmin changes
   useEffect(() => {
     localStorage.setItem("findr_is_admin", String(isAdmin));
   }, [isAdmin]);
@@ -706,10 +702,11 @@ export default function DashboardPage() {
     alert(requestSentText);
   };
 
+  // ✅ FIXED: deletes the row instead of updating status to "claimed"
   const handleConfirmClaimed = async (itemId: number) => {
     const { error } = await supabase
       .from("items")
-      .update({ status: "claimed" })
+      .delete()
       .eq("id", itemId);
     if (!error) {
       updateItemStatus(itemId, "claimed");
