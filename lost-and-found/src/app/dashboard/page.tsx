@@ -28,12 +28,14 @@ interface ChatUser { uid: string; displayName: string; }
 interface ChatItem { id: number; name: string; [key: string]: unknown; }
 interface ActiveChat { conversationId: string; item: ChatItem; otherUser: ChatUser; }
 
-// ─────────────────────────────────────────────
-// Tab definitions
-// TabId includes "approve" but it only shows in the sidebar if you're
-// the owner — everyone else never sees it
-// ─────────────────────────────────────────────
-type TabId = "items" | "add-item" | "become-admin" | "admin-login" | "approve";
+type TabId = "items" | "add-item" | "become-admin" | "admin-login";
+
+const SIDEBAR_TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+  { id: "items",        label: "Items",           icon: "📦" },
+  { id: "add-item",     label: "Add Item",         icon: "＋" },
+  { id: "become-admin", label: "Become an Admin",  icon: <FaHandshakeAngle /> },
+  { id: "admin-login",  label: "Admin",            icon: "🔐" },
+];
 
 // ─────────────────────────────────────────────
 // Chat Modal
@@ -219,9 +221,8 @@ function AdminPanel() {
 
 // ─────────────────────────────────────────────
 // Admin Login Panel
-// Teachers enter their emailed password here.
-// The code checks the admins table for a row matching
-// their logged-in email + the password they typed.
+// On success, saves isAdmin to localStorage so it persists
+// across refreshes and page navigation.
 // ─────────────────────────────────────────────
 function AdminLoginPanel({ onUnlock }: { onUnlock: () => void }) {
   const { user } = useUser();
@@ -243,6 +244,7 @@ function AdminLoginPanel({ onUnlock }: { onUnlock: () => void }) {
     if (dbError || !data) {
       setError("Incorrect password or not approved yet.");
     } else {
+      localStorage.setItem("findr_is_admin", "true");
       setUnlocked(true);
       onUnlock();
     }
@@ -279,112 +281,6 @@ function AdminLoginPanel({ onUnlock }: { onUnlock: () => void }) {
 }
 
 // ─────────────────────────────────────────────
-// Approve Panel — only YOU see this tab
-// When you click Approve:
-//   1. Calls the SQL function which generates a password
-//      and inserts the teacher into the admins table
-//   2. Reads that password back from the admins table
-//   3. Sends it to the teacher via EmailJS
-// ─────────────────────────────────────────────
-function ApprovePanel() {
-  const [requests, setRequests] = useState<any[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [sending, setSending] = useState<string | null>(null);
-
-  const loadRequests = async () => {
-    const { data } = await supabase
-      .from("admin_requests")
-      .select("*")
-      .eq("status", "pending");
-    setRequests(data ?? []);
-    setLoaded(true);
-  };
-
-  const handleApprove = async (req: any) => {
-    setSending(req.id);
-
-    // Step 1: call the SQL function — generates password,
-    // inserts into admins, marks request as approved
-    const { error: fnError } = await supabase.rpc("approve_admin", {
-      request_id: req.id,
-    });
-
-    if (fnError) {
-      alert("Error approving: " + fnError.message);
-      setSending(null);
-      return;
-    }
-
-    // Step 2: read back the generated password
-    const { data: adminRow, error: fetchError } = await supabase
-      .from("admins")
-      .select("password")
-      .eq("email", req.email)
-      .single();
-
-    if (fetchError || !adminRow) {
-      alert("Approved but couldn't fetch password — check admins table manually.");
-      setSending(null);
-      return;
-    }
-
-    // Step 3: send email via EmailJS
-    try {
-      await emailjs.send(
-        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!,
-        process.env.NEXT_PUBLIC_EMAILJS_ADMIN_TEMPLATE_ID!,
-        {
-          to_email: req.email,
-          admin_name: req.name,
-          admin_password: adminRow.password,
-        },
-        process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!
-      );
-      alert(`Done! Email sent to ${req.email}\nPassword: ${adminRow.password}`);
-    } catch (err) {
-      // Already approved and in DB — just show the password so you can send manually
-      alert(`Approved! Email failed.\nManually send password: ${adminRow.password}`);
-      console.error(err);
-    }
-
-    setRequests((prev) => prev.filter((r) => r.id !== req.id));
-    setSending(null);
-  };
-
-  return (
-    <div className="panel-content">
-      <div className="panel-section-title">Pending Requests</div>
-      {!loaded ? (
-        <button className="panel-form__submit" onClick={loadRequests}>Load Requests</button>
-      ) : requests.length === 0 ? (
-        <p className="panel-empty">No pending requests.</p>
-      ) : (
-        <div className="approve-list">
-          {requests.map((req) => (
-            <div key={req.id} className="approve-card">
-              <p className="approve-card__name">{req.name}</p>
-              <p className="approve-card__meta">{req.email}</p>
-              <p className="approve-card__meta">{req.school} · ID: {req.teacher_id}</p>
-              {req.extra_info && <p className="approve-card__extra">{req.extra_info}</p>}
-              {req.id_image_url && (
-                <img src={req.id_image_url} alt="ID" className="approve-card__img" />
-              )}
-              <button
-                className="panel-form__submit"
-                onClick={() => handleApprove(req)}
-                disabled={sending === req.id}
-              >
-                {sending === req.id ? "Approving..." : "Approve & Send Email"}
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────
 // Dashboard Page
 // ─────────────────────────────────────────────
 export default function DashboardPage() {
@@ -392,15 +288,23 @@ export default function DashboardPage() {
   const { user } = useUser();
   const { language } = useSettings();
 
-  // isOwner is true only if the logged-in Clerk user ID matches
-  // the NEXT_PUBLIC_OWNER_CLERK_ID env variable — i.e. only you
-  const isOwner = user?.id === process.env.NEXT_PUBLIC_OWNER_CLERK_ID;
-
   const [activeTab, setActiveTab] = useState<TabId>("items");
   const [isReady, setIsReady] = useState(false);
   const [activeChat, setActiveChat] = useState<ActiveChat | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false);
+
+  // isAdmin is read from localStorage on load so it persists across refreshes
+  const [isAdmin, setIsAdmin] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("findr_is_admin") === "true";
+    }
+    return false;
+  });
+
+  // Keep localStorage in sync whenever isAdmin changes
+  useEffect(() => {
+    localStorage.setItem("findr_is_admin", String(isAdmin));
+  }, [isAdmin]);
 
   // Add Item form state
   const [newItemName, setNewItemName] = useState("");
@@ -410,29 +314,20 @@ export default function DashboardPage() {
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
   // ── Translations ──────────────────────────
-  const [addItemText, setAddItemText]             = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_addItem_${language}`)     || "+ Add Item"                          : "+ Add Item");
-  const [reportFoundText, setReportFoundText]     = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_reportFound_${language}`)  || "Report Found Item"                  : "Report Found Item");
-  const [itemNameText, setItemNameText]           = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_itemName_${language}`)     || "Item Name"                          : "Item Name");
-  const [descriptionText, setDescriptionText]     = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_description_${language}`)  || "Description (location, time, etc)"  : "Description (location, time, etc)");
-  const [cancelText, setCancelText]               = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_cancel_${language}`)       || "Cancel"                             : "Cancel");
-  const [postItemText, setPostItemText]           = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_postItem_${language}`)     || "Post Item"                          : "Post Item");
-  const [uploadingText, setUploadingText]         = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_uploading_${language}`)    || "Uploading..."                       : "Uploading...");
-  const [foundByText, setFoundByText]             = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_foundBy_${language}`)     || "Found by:"                         : "Found by:");
-  const [retrieveText, setRetrieveText]           = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_retrieve_${language}`)    || "Retrieve"                          : "Retrieve");
-  const [confirmText, setConfirmText]             = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_confirm_${language}`)     || "Confirm Claimed"                   : "Confirm Claimed");
-  const [pendingText, setPendingText]             = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_pending_${language}`)     || "Item Claimed (Pending Confirmation)": "Item Claimed (Pending Confirmation)");
-  const [signInText, setSignInText]               = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_signIn_${language}`)      || "Please sign in to retrieve items"  : "Please sign in to retrieve items");
-  const [requestSentText, setRequestSentText]     = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_requestSent_${language}`) || "Request sent! The owner has been notified." : "Request sent! The owner has been notified.");
-  const [markedClaimedText, setMarkedClaimedText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_markedClaimed_${language}`)|| "Item officially marked as claimed!": "Item officially marked as claimed!");
-
-  // SIDEBAR_TABS — the "approve" tab only appears if you're the owner
-  const SIDEBAR_TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-    { id: "items",        label: "Items",           icon: "📦" },
-    { id: "add-item",     label: "Add Item",         icon: "＋" },
-    { id: "become-admin", label: "Become an Admin",  icon: <FaHandshakeAngle /> },
-    { id: "admin-login",  label: "Admin",            icon: "🔐" },
-    ...(isOwner ? [{ id: "approve" as TabId, label: "Approve Admins", icon: "✅" }] : []),
-  ];
+  const [addItemText, setAddItemText]             = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_addItem_${language}`)      || "+ Add Item"                          : "+ Add Item");
+  const [reportFoundText, setReportFoundText]     = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_reportFound_${language}`)   || "Report Found Item"                  : "Report Found Item");
+  const [itemNameText, setItemNameText]           = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_itemName_${language}`)      || "Item Name"                          : "Item Name");
+  const [descriptionText, setDescriptionText]     = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_description_${language}`)   || "Description (location, time, etc)"  : "Description (location, time, etc)");
+  const [cancelText, setCancelText]               = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_cancel_${language}`)        || "Cancel"                             : "Cancel");
+  const [postItemText, setPostItemText]           = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_postItem_${language}`)      || "Post Item"                          : "Post Item");
+  const [uploadingText, setUploadingText]         = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_uploading_${language}`)     || "Uploading..."                       : "Uploading...");
+  const [foundByText, setFoundByText]             = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_foundBy_${language}`)      || "Found by:"                         : "Found by:");
+  const [retrieveText, setRetrieveText]           = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_retrieve_${language}`)     || "Retrieve"                          : "Retrieve");
+  const [confirmText, setConfirmText]             = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_confirm_${language}`)      || "Confirm Claimed"                   : "Confirm Claimed");
+  const [pendingText, setPendingText]             = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_pending_${language}`)      || "Item Claimed (Pending Confirmation)": "Item Claimed (Pending Confirmation)");
+  const [signInText, setSignInText]               = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_signIn_${language}`)       || "Please sign in to retrieve items"  : "Please sign in to retrieve items");
+  const [requestSentText, setRequestSentText]     = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_requestSent_${language}`)  || "Request sent! The owner has been notified." : "Request sent! The owner has been notified.");
+  const [markedClaimedText, setMarkedClaimedText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_markedClaimed_${language}`) || "Item officially marked as claimed!": "Item officially marked as claimed!");
 
   useEffect(() => {
     if (language === "en") {
@@ -664,13 +559,6 @@ export default function DashboardPage() {
       case "admin-login":
         return <AdminLoginPanel onUnlock={() => setIsAdmin(true)} />;
 
-      case "approve":
-        return <ApprovePanel />;
-
-      // ← Add new cases here
-      // case "my-tab":
-      //   return <MyTabPanel />;
-
       default:
         return null;
     }
@@ -713,7 +601,10 @@ export default function DashboardPage() {
           <div className="admin-banner">
             <span className="admin-banner__icon">🔐</span>
             <span>Admin mode active — you can delete any item</span>
-            <button className="admin-banner__exit" onClick={() => setIsAdmin(false)}>Exit Admin</button>
+            <button className="admin-banner__exit" onClick={() => {
+              setIsAdmin(false);
+              localStorage.removeItem("findr_is_admin");
+            }}>Exit Admin</button>
           </div>
         )}
 
