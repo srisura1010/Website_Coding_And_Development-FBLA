@@ -125,7 +125,7 @@ export default function Navbar() {
               className="dashboard-link"
               onClick={() => router.push("/super-admin")}
             >
-              ⚙️ Super Admin
+               Super Admin
             </button>
           </li>
         )}

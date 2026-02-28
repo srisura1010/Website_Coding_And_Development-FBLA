@@ -42,10 +42,10 @@ interface ActiveChat {
 type TabId = "items" | "add-item" | "become-admin" | "admin-login";
 
 const SIDEBAR_TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-  { id: "items", label: "Items", icon: "📦" },
-  { id: "add-item", label: "Add Item", icon: "＋" },
-  { id: "become-admin", label: "Become an Admin", icon: <FaHandshakeAngle /> },
-  { id: "admin-login", label: "Admin", icon: "🔐" },
+  { id: "items", label: "Items", icon: "" },
+  { id: "add-item", label: "Add Item", icon: "" },
+  { id: "become-admin", label: "Become an Admin", icon: "" },
+  { id: "admin-login", label: "Admin", icon: "" },
 ];
 
 // ─────────────────────────────────────────────
@@ -218,6 +218,8 @@ function ChatModal({
 // Become Admin Panel
 // ─────────────────────────────────────────────
 function AdminPanel() {
+  const { user } = useUser();
+
   const [adminForm, setAdminForm] = useState({
     name: "",
     email: "",
@@ -228,6 +230,17 @@ function AdminPanel() {
   const [adminFile, setAdminFile] = useState<File | null>(null);
   const [adminUploading, setAdminUploading] = useState(false);
   const [adminSuccess, setAdminSuccess] = useState(false);
+
+  // Prefill name and email from Clerk
+  useEffect(() => {
+    if (user) {
+      setAdminForm((p) => ({
+        ...p,
+        name: user.fullName || user.username || "",
+        email: user.primaryEmailAddress?.emailAddress || "",
+      }));
+    }
+  }, [user]);
 
   const handleAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -291,9 +304,7 @@ function AdminPanel() {
             placeholder="Jane Smith"
             required
             value={adminForm.name}
-            onChange={(e) =>
-              setAdminForm((p) => ({ ...p, name: e.target.value }))
-            }
+            readOnly
           />
           <label className="panel-form__label">Email</label>
           <input
@@ -302,9 +313,7 @@ function AdminPanel() {
             placeholder="jane@school.edu"
             required
             value={adminForm.email}
-            onChange={(e) =>
-              setAdminForm((p) => ({ ...p, email: e.target.value }))
-            }
+            readOnly
           />
           <label className="panel-form__label">School / Institution</label>
           <input
@@ -702,7 +711,6 @@ export default function DashboardPage() {
     alert(requestSentText);
   };
 
-  // ✅ FIXED: deletes the row instead of updating status to "claimed"
   const handleConfirmClaimed = async (itemId: number) => {
     const { error } = await supabase
       .from("items")
