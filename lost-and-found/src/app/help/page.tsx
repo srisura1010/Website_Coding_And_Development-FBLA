@@ -2,6 +2,7 @@
 
 import "./help.css";
 import { useState, useRef, useEffect } from "react";
+import { useSettings } from "@/context/SettingsContext";
 
 // ─────────────────────────────────────────────
 // Types
@@ -9,6 +10,49 @@ import { useState, useRef, useEffect } from "react";
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+}
+
+// ─────────────────────────────────────────────
+// Translation Hook
+// ─────────────────────────────────────────────
+function useTranslated(text: string, language: string): string {
+  const [translated, setTranslated] = useState(text);
+
+  useEffect(() => {
+    setTranslated(text); // reset when text changes
+    if (language === "en") return;
+
+    const cacheKey = `help_${text.slice(0, 40).replace(/\s+/g, "_")}_${language}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      setTranslated(cached);
+      return;
+    }
+
+    fetch("/api/translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, target: language }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        const result = d.translatedText || text;
+        setTranslated(result);
+        localStorage.setItem(cacheKey, result);
+      })
+      .catch(() => setTranslated(text));
+  }, [text, language]);
+
+  return translated;
+}
+
+// ─────────────────────────────────────────────
+// TranslatedText Component
+// (needed so we can use the hook inside .map() safely)
+// ─────────────────────────────────────────────
+function TranslatedText({ text, language }: { text: string; language: string }) {
+  const translated = useTranslated(text, language);
+  return <>{translated}</>;
 }
 
 // ─────────────────────────────────────────────
@@ -134,7 +178,7 @@ const FAQ_CATEGORIES = [
 // ─────────────────────────────────────────────
 // FAQ Accordion
 // ─────────────────────────────────────────────
-function FAQAccordion() {
+function FAQAccordion({ language }: { language: string }) {
   const [activeCategory, setActiveCategory] = useState("getting-started");
   const [openQuestion, setOpenQuestion] = useState<string | null>(null);
 
@@ -147,10 +191,15 @@ function FAQAccordion() {
           <button
             key={cat.id}
             className={`faq-cat-btn${activeCategory === cat.id ? " active" : ""}`}
-            onClick={() => { setActiveCategory(cat.id); setOpenQuestion(null); }}
+            onClick={() => {
+              setActiveCategory(cat.id);
+              setOpenQuestion(null);
+            }}
           >
             <span>{cat.icon}</span>
-            <span>{cat.label}</span>
+            <span>
+              <TranslatedText text={cat.label} language={language} />
+            </span>
           </button>
         ))}
       </div>
@@ -165,11 +214,19 @@ function FAQAccordion() {
                 className="faq-item__question"
                 onClick={() => setOpenQuestion(isOpen ? null : key)}
               >
-                <span>{item.q}</span>
-                <span className={`faq-item__chevron${isOpen ? " faq-item__chevron--open" : ""}`}>›</span>
+                <span>
+                  <TranslatedText text={item.q} language={language} />
+                </span>
+                <span
+                  className={`faq-item__chevron${isOpen ? " faq-item__chevron--open" : ""}`}
+                >
+                  ›
+                </span>
               </button>
               {isOpen && (
-                <div className="faq-item__answer">{item.a}</div>
+                <div className="faq-item__answer">
+                  <TranslatedText text={item.a} language={language} />
+                </div>
               )}
             </div>
           );
@@ -197,16 +254,24 @@ Keep answers short, friendly, and focused on Findr. Here's what you know:
 
 If you don't know something, say so and suggest contacting the school admin.`;
 
-function GroqChatbot() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: "assistant",
-      content: "Hey! I'm Findr's support assistant. Ask me anything about how to use the app ",
-    },
-  ]);
+function GroqChatbot({ language }: { language: string }) {
+  const initialMessage = useTranslated(
+    "Hey! I'm Findr's support assistant. Ask me anything about how to use the app",
+    language
+  );
+  const placeholderText = useTranslated("Ask anything about Findr...", language);
+  const poweredByText = useTranslated("Powered by", language);
+  const askAnythingText = useTranslated("Ask anything about how the app works.", language);
+
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Set initial message once translated
+  useEffect(() => {
+    setMessages([{ role: "assistant", content: initialMessage }]);
+  }, [initialMessage]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -235,7 +300,10 @@ function GroqChatbot() {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong");
-      setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: data.reply },
+      ]);
     } catch (err: any) {
       setMessages((prev) => [
         ...prev,
@@ -247,33 +315,47 @@ function GroqChatbot() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
   };
 
   return (
     <>
       <p className="chatbot-intro">
-        Powered by <strong>Groq</strong> —  Ask anything about how the app works.
+        {poweredByText} <strong>Groq</strong> — {askAnythingText}
       </p>
 
       <div className="chatbot">
         <div className="chatbot__header">
           <div className="chatbot__header-dot" />
-          <span className="chatbot__header-title">Findr AI Support</span>
+          <span className="chatbot__header-title">
+            <TranslatedText text="Findr AI Support" language={language} />
+          </span>
         </div>
 
         <div className="chatbot__messages">
           {messages.map((msg, i) => (
-            <div key={i} className={`chatbot__bubble-wrap${msg.role === "user" ? " chatbot__bubble-wrap--user" : ""}`}>
-              {msg.role === "assistant" && <div className="chatbot__avatar">F</div>}
-              <div className={`chatbot__bubble chatbot__bubble--${msg.role}`}>{msg.content}</div>
+            <div
+              key={i}
+              className={`chatbot__bubble-wrap${msg.role === "user" ? " chatbot__bubble-wrap--user" : ""}`}
+            >
+              {msg.role === "assistant" && (
+                <div className="chatbot__avatar">F</div>
+              )}
+              <div className={`chatbot__bubble chatbot__bubble--${msg.role}`}>
+                {msg.content}
+              </div>
             </div>
           ))}
           {loading && (
             <div className="chatbot__bubble-wrap">
               <div className="chatbot__avatar">F</div>
               <div className="chatbot__bubble chatbot__bubble--assistant chatbot__bubble--typing">
-                <span /><span /><span />
+                <span />
+                <span />
+                <span />
               </div>
             </div>
           )}
@@ -286,7 +368,7 @@ function GroqChatbot() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask anything about Findr..."
+            placeholder={placeholderText}
             className="chatbot__textarea"
           />
           <button
@@ -306,52 +388,110 @@ function GroqChatbot() {
 // Quick Start Steps
 // ─────────────────────────────────────────────
 const STEPS = [
-  { num: "01", title: "Sign In", desc: "Create an account or sign in with your email via Clerk." },
-  { num: "02", title: "Browse Items", desc: "Search the dashboard for your lost item using keywords, colors, or item type." },
-  { num: "03", title: "Claim or Post", desc: "Hit 'Retrieve' to claim a found item, or 'Add Item' to report something you found." },
-  { num: "04", title: "Connect", desc: "Use 'Message Finder' to chat directly and arrange the handoff." },
-  { num: "05", title: "Confirm", desc: "Once returned, the finder hits 'Confirm Claimed' — the listing is removed automatically." },
+  {
+    num: "01",
+    title: "Sign In",
+    desc: "Create an account or sign in with your email via Clerk.",
+  },
+  {
+    num: "02",
+    title: "Browse Items",
+    desc: "Search the dashboard for your lost item using keywords, colors, or item type.",
+  },
+  {
+    num: "03",
+    title: "Claim or Post",
+    desc: "Hit 'Retrieve' to claim a found item, or 'Add Item' to report something you found.",
+  },
+  {
+    num: "04",
+    title: "Connect",
+    desc: "Use 'Message Finder' to chat directly and arrange the handoff.",
+  },
+  {
+    num: "05",
+    title: "Confirm",
+    desc: "Once returned, the finder hits 'Confirm Claimed' — the listing is removed automatically.",
+  },
+];
+
+const PRO_TIPS = [
+  "Use descriptive keywords when searching — the AI understands \"black north face backpack\"",
+  "Post found items ASAP with a clear photo — AI auto-tags it for better discoverability",
+  "Use \"Message Finder\" before claiming if you need to confirm it's yours",
+  "Admins can moderate the board — contact them for duplicate or spam listings",
+  "Switch languages in Settings if English isn't your first language",
 ];
 
 // ─────────────────────────────────────────────
 // Main Help Page
 // ─────────────────────────────────────────────
 export default function HelpPage() {
+  const { language } = useSettings();
   const [activeSection, setActiveSection] = useState<"guide" | "faq" | "chat">("guide");
+
+  // Nav tab labels
+  const quickStartLabel = useTranslated("Quick Start", language);
+  const faqLabel = useTranslated("FAQs", language);
+  const aiSupportLabel = useTranslated("AI Support", language);
+
+  // Heading / subtitle
+  const helpTitle = useTranslated("Help & Support", language);
+  const helpSubtitle = useTranslated(
+    "Everything you need to use Findr — guides, FAQs, and live AI support.",
+    language
+  );
+
+  // Section headings
+  const howItWorksText = useTranslated("How it works", language);
+  const proTipsText = useTranslated("Pro Tips", language);
+  const faqHeading = useTranslated("Frequently Asked Questions", language);
+  const aiSupportHeading = useTranslated("AI Support Chat", language);
 
   return (
     <div className="help-page">
       <div className="help-card">
-        <h1>Help &amp; Support</h1>
-        <p className="help-subtitle">Everything you need to use Findr — guides, FAQs, and live AI support.</p>
+        <h1>{helpTitle}</h1>
+        <p className="help-subtitle">{helpSubtitle}</p>
 
-        {/* Nav tabs — same pattern as theme-options buttons */}
+        {/* Nav tabs */}
         <div className="help-nav">
-          {(["guide", "faq", "chat"] as const).map((s) => (
-            <button
-              key={s}
-              className={activeSection === s ? "active" : ""}
-              onClick={() => setActiveSection(s)}
-            >
-              {s === "guide" && " Quick Start"}
-              {s === "faq" && " FAQs"}
-              {s === "chat" && " AI Support"}
-            </button>
-          ))}
+          <button
+            className={activeSection === "guide" ? "active" : ""}
+            onClick={() => setActiveSection("guide")}
+          >
+            {quickStartLabel}
+          </button>
+          <button
+            className={activeSection === "faq" ? "active" : ""}
+            onClick={() => setActiveSection("faq")}
+          >
+            {faqLabel}
+          </button>
+          <button
+            className={activeSection === "chat" ? "active" : ""}
+            onClick={() => setActiveSection("chat")}
+          >
+            {aiSupportLabel}
+          </button>
         </div>
 
         {/* Quick Start */}
         {activeSection === "guide" && (
           <>
             <div className="help-section">
-              <h3>How it works</h3>
+              <h3>{howItWorksText}</h3>
               <div className="guide-steps">
                 {STEPS.map((step) => (
                   <div key={step.num} className="guide-step">
                     <div className="guide-step__num">{step.num}</div>
                     <div>
-                      <div className="guide-step__title">{step.title}</div>
-                      <div className="guide-step__desc">{step.desc}</div>
+                      <div className="guide-step__title">
+                        <TranslatedText text={step.title} language={language} />
+                      </div>
+                      <div className="guide-step__desc">
+                        <TranslatedText text={step.desc} language={language} />
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -359,13 +499,13 @@ export default function HelpPage() {
             </div>
 
             <div className="help-section">
-              <h3>Pro Tips</h3>
+              <h3>{proTipsText}</h3>
               <ul className="guide-tips">
-                <li>Use descriptive keywords when searching — the AI understands "black north face backpack"</li>
-                <li>Post found items ASAP with a clear photo — AI auto-tags it for better discoverability</li>
-                <li>Use "Message Finder" before claiming if you need to confirm it's yours</li>
-                <li>Admins can moderate the board — contact them for duplicate or spam listings</li>
-                <li>Switch languages in Settings if English isn't your first language</li>
+                {PRO_TIPS.map((tip, i) => (
+                  <li key={i}>
+                    <TranslatedText text={tip} language={language} />
+                  </li>
+                ))}
               </ul>
             </div>
           </>
@@ -374,16 +514,16 @@ export default function HelpPage() {
         {/* FAQ */}
         {activeSection === "faq" && (
           <div className="help-section">
-            <h3>Frequently Asked Questions</h3>
-            <FAQAccordion />
+            <h3>{faqHeading}</h3>
+            <FAQAccordion language={language} />
           </div>
         )}
 
         {/* Chatbot */}
         {activeSection === "chat" && (
           <div className="help-section">
-            <h3>AI Support Chat</h3>
-            <GroqChatbot />
+            <h3>{aiSupportHeading}</h3>
+            <GroqChatbot language={language} />
           </div>
         )}
       </div>
