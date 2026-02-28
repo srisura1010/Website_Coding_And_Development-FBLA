@@ -54,17 +54,23 @@ export default function Navbar() {
     if (typeof window !== "undefined") return localStorage.getItem(`nav_signUp_${language}`) || "Sign Up";
     return "Sign Up";
   });
+  const [helpText, setHelpText] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem(`nav_help_${language}`) || "Help";
+    return "Help";
+  });
 
   useEffect(() => {
     if (language === "en") {
       setDashboardText("Dashboard");
       setSignUpText("Sign Up");
+      setHelpText("Help");
       return;
     }
     const translateAndCache = async () => {
       const translations = [
         { key: "Dashboard", setter: setDashboardText, cacheKey: "nav_dashboard" },
         { key: "Sign Up", setter: setSignUpText, cacheKey: "nav_signUp" },
+        { key: "Help", setter: setHelpText, cacheKey: "nav_help" },
       ];
       for (const { key, setter, cacheKey } of translations) {
         try {
@@ -119,6 +125,11 @@ export default function Navbar() {
             </button>
           </li>
         )}
+        <li>
+          <button className="dashboard-link" onClick={() => router.push("/help")}>
+            {helpText}
+          </button>
+        </li>
         {isSuperAdmin && (
           <li>
             <button
