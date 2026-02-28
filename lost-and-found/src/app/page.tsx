@@ -2,131 +2,98 @@
 
 import "./home.css";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { FaSearch, FaHandsHelping, FaShieldAlt, FaSlidersH, FaSchool } from "react-icons/fa";
 import { IoFolder } from "react-icons/io5";
 import { useSettings } from "@/context/SettingsContext";
 
 export default function Home() {
   const { language } = useSettings();
+  const router = useRouter();
   const [isReady, setIsReady] = useState(false);
   
-  // Load from localStorage immediately
   const [lostText, setLostText] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`home_lost_${language}`) || "Lost Something?";
-    }
+    if (typeof window !== 'undefined') return localStorage.getItem(`home_lost_${language}`) || "Lost Something?";
     return "Lost Something?";
   });
   
   const [dontPanicText, setDontPanicText] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`home_panic_${language}`) || "Don't Panic.";
-    }
+    if (typeof window !== 'undefined') return localStorage.getItem(`home_panic_${language}`) || "Don't Panic.";
     return "Don't Panic.";
   });
   
   const [connectingText, setConnectingText] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`home_connecting_${language}`) || "Connecting students, staff, and schools and reuniting them with their lost items";
-    }
-    return "Connecting students, staff, and schools and reuniting them with their lost items";
+    if (typeof window !== 'undefined') return localStorage.getItem(`home_connecting_${language}`) || "Connecting student, staff, and schools and reuniting them with their lost items";
+    return "Connecting student, staff, and schools and reuniting them with their lost items";
   });
   
   const [browseText, setBrowseText] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`home_browse_${language}`) || "Browse Lost Items";
-    }
+    if (typeof window !== 'undefined') return localStorage.getItem(`home_browse_${language}`) || "Browse Lost Items";
     return "Browse Lost Items";
   });
   
   const [reportText, setReportText] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`home_report_${language}`) || "Report a Lost Item";
-    }
+    if (typeof window !== 'undefined') return localStorage.getItem(`home_report_${language}`) || "Report a Lost Item";
     return "Report a Lost Item";
   });
 
   const [card1Title, setCard1Title] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`home_card1Title_${language}`) || "One Place for Everything";
-    }
+    if (typeof window !== 'undefined') return localStorage.getItem(`home_card1Title_${language}`) || "One Place for Everything";
     return "One Place for Everything";
   });
 
   const [card2Title, setCard2Title] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`home_card2Title_${language}`) || "Designed for Campuses";
-    }
+    if (typeof window !== 'undefined') return localStorage.getItem(`home_card2Title_${language}`) || "Designed for Campuses";
     return "Designed for Campuses";
   });
 
   const [card3Title, setCard3Title] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`home_card3Title_${language}`) || "Find Items Faster";
-    }
+    if (typeof window !== 'undefined') return localStorage.getItem(`home_card3Title_${language}`) || "Find Items Faster";
     return "Find Items Faster";
   });
 
   const [card4Title, setCard4Title] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`home_card4Title_${language}`) || "Search What Matters";
-    }
+    if (typeof window !== 'undefined') return localStorage.getItem(`home_card4Title_${language}`) || "Search What Matters";
     return "Search What Matters";
   });
 
   const [card5Title, setCard5Title] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`home_card5Title_${language}`) || "Students Helping Students";
-    }
+    if (typeof window !== 'undefined') return localStorage.getItem(`home_card5Title_${language}`) || "Students Helping Students";
     return "Students Helping Students";
   });
 
   const [card6Title, setCard6Title] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`home_card6Title_${language}`) || "Secure by Design";
-    }
+    if (typeof window !== 'undefined') return localStorage.getItem(`home_card6Title_${language}`) || "Secure by Design";
     return "Secure by Design";
   });
 
   const [card1Body, setCard1Body] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`home_card1Body_${language}`) || "Stop checking multiple offices or bulletin boards. All lost and found items live in one clean, searchable place.";
-    }
+    if (typeof window !== 'undefined') return localStorage.getItem(`home_card1Body_${language}`) || "Stop checking multiple offices or bulletin boards. All lost and found items live in one clean, searchable place.";
     return "Stop checking multiple offices or bulletin boards. All lost and found items live in one clean, searchable place.";
   });
 
   const [card2Body, setCard2Body] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`home_card2Body_${language}`) || "Findr is made specifically for schools — from hallways to gyms to libraries — so nothing slips through the cracks.";
-    }
+    if (typeof window !== 'undefined') return localStorage.getItem(`home_card2Body_${language}`) || "Findr is made specifically for schools — from hallways to gyms to libraries — so nothing slips through the cracks.";
     return "Findr is made specifically for schools — from hallways to gyms to libraries — so nothing slips through the cracks.";
   });
 
   const [card3Body, setCard3Body] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`home_card3Body_${language}`) || "Quickly match lost items with found ones and get belongings back to students in days, not weeks.";
-    }
+    if (typeof window !== 'undefined') return localStorage.getItem(`home_card3Body_${language}`) || "Quickly match lost items with found ones and get belongings back to students in days, not weeks.";
     return "Quickly match lost items with found ones and get belongings back to students in days, not weeks.";
   });
 
   const [card4Body, setCard4Body] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`home_card4Body_${language}`) || "Filter by category, location, and time to instantly narrow down results and spot your item.";
-    }
+    if (typeof window !== 'undefined') return localStorage.getItem(`home_card4Body_${language}`) || "Filter by category, location, and time to instantly narrow down results and spot your item.";
     return "Filter by category, location, and time to instantly narrow down results and spot your item.";
   });
 
   const [card5Body, setCard5Body] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`home_card5Body_${language}`) || "Anyone can report a found item, creating a trusted, school-wide system that actually works.";
-    }
+    if (typeof window !== 'undefined') return localStorage.getItem(`home_card5Body_${language}`) || "Anyone can report a found item, creating a trusted, school-wide system that actually works.";
     return "Anyone can report a found item, creating a trusted, school-wide system that actually works.";
   });
 
   const [card6Body, setCard6Body] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`home_card6Body_${language}`) || "Only your school community sees your items, keeping reports private and protected.";
-    }
+    if (typeof window !== 'undefined') return localStorage.getItem(`home_card6Body_${language}`) || "Only your school community sees your items, keeping reports private and protected.";
     return "Only your school community sees your items, keeping reports private and protected.";
   });
 
@@ -134,7 +101,7 @@ export default function Home() {
     if (language === "en") {
       setLostText("Lost Something?");
       setDontPanicText("Don't Panic.");
-      setConnectingText("Connecting students, staff, and schools and reuniting them with their lost items");
+      setConnectingText("Connecting student, staff, and schools and reuniting them with their lost items");
       setBrowseText("Browse Lost Items");
       setReportText("Report a Lost Item");
       setCard1Title("One Place for Everything");
@@ -157,7 +124,7 @@ export default function Home() {
       const translations = [
         { key: "Lost Something?", setter: setLostText, cacheKey: "home_lost" },
         { key: "Don't Panic.", setter: setDontPanicText, cacheKey: "home_panic" },
-        { key: "Connecting students, staff, and schools and reuniting them with their lost items", setter: setConnectingText, cacheKey: "home_connecting" },
+        { key: "Connecting student, staff, and schools and reuniting them with their lost items", setter: setConnectingText, cacheKey: "home_connecting" },
         { key: "Browse Lost Items", setter: setBrowseText, cacheKey: "home_browse" },
         { key: "Report a Lost Item", setter: setReportText, cacheKey: "home_report" },
         { key: "One Place for Everything", setter: setCard1Title, cacheKey: "home_card1Title" },
@@ -181,14 +148,13 @@ export default function Home() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: key, target: language }),
           });
-
           if (res.ok) {
             const data = await res.json();
             const translated = data.translatedText || key;
             setter(translated);
             localStorage.setItem(`${cacheKey}_${language}`, translated);
           }
-        } catch (error) {
+        } catch {
           // Keep using cached or default
         }
       }
@@ -218,81 +184,71 @@ export default function Home() {
           <span className="panicHero">{dontPanicText}</span>
         </h1>
         <p>{connectingText}</p>
-        <button className="browse">{browseText}</button>
-        <button className="report">{reportText}</button>
+        <button className="browse" onClick={() => router.push("/dashboard")}>{browseText}</button>
+        <button className="report" onClick={() => router.push("/dashboard")}>{reportText}</button>
       </div>
 
       <div className="carousel relative z-10">
         <div className="track">
           <div className="card">
-            <article className="card-icon"><IoFolder className="text-blue-500" focusable="false"/></article>
+            <span className="card-icon"><IoFolder className="text-blue-500" /></span>
             <h3 className="card-title">{card1Title}</h3>
             <p className="card-body">{card1Body}</p>
           </div>
-
           <div className="card">
-            <article className="card-icon"><FaSchool className="text-blue-500" focusable="false" /></article>
+            <span className="card-icon"><FaSchool className="text-blue-500" /></span>
             <h3 className="card-title">{card2Title}</h3>
             <p className="card-body">{card2Body}</p>
           </div>
-
           <div className="card">
-            <article className="card-icon"><FaSearch className="text-blue-500" focusable="false" /></article>
+            <span className="card-icon"><FaSearch className="text-blue-500" /></span>
             <h3 className="card-title">{card3Title}</h3>
             <p className="card-body">{card3Body}</p>
           </div>
-
           <div className="card">
-            <article className="card-icon"><FaSlidersH className="text-blue-500" focusable="false" /></article>
+            <span className="card-icon"><FaSlidersH className="text-blue-500" /></span>
             <h3 className="card-title">{card4Title}</h3>
             <p className="card-body">{card4Body}</p>
           </div>
-
           <div className="card">
-            <article className="card-icon"><FaHandsHelping className="text-blue-500" focusable="false" /></article>
+            <span className="card-icon"><FaHandsHelping className="text-blue-500" /></span>
             <h3 className="card-title">{card5Title}</h3>
             <p className="card-body">{card5Body}</p>
           </div>
-
           <div className="card">
-            <article className="card-icon"><FaShieldAlt className="text-blue-500" focusable="false" /></article>
+            <span className="card-icon"><FaShieldAlt className="text-blue-500" /></span>
             <h3 className="card-title">{card6Title}</h3>
             <p className="card-body">{card6Body}</p>
           </div>
 
-          {/* Duplicate set */}
+          {/* Duplicate set for infinite scroll */}
           <div className="card">
-            <article className="card-icon"><IoFolder className="text-blue-500" focusable="false"/></article>
+            <span className="card-icon"><IoFolder className="text-blue-500" /></span>
             <h3 className="card-title">{card1Title}</h3>
             <p className="card-body">{card1Body}</p>
           </div>
-
           <div className="card">
-            <article className="card-icon"><FaSchool className="text-blue-500" focusable="false" /></article>
+            <span className="card-icon"><FaSchool className="text-blue-500" /></span>
             <h3 className="card-title">{card2Title}</h3>
             <p className="card-body">{card2Body}</p>
           </div>
-
           <div className="card">
-            <article className="card-icon"><FaSearch className="text-blue-500" focusable="false" /></article>
+            <span className="card-icon"><FaSearch className="text-blue-500" /></span>
             <h3 className="card-title">{card3Title}</h3>
             <p className="card-body">{card3Body}</p>
           </div>
-
           <div className="card">
-            <article className="card-icon"><FaSlidersH className="text-blue-500" focusable="false" /></article>
+            <span className="card-icon"><FaSlidersH className="text-blue-500" /></span>
             <h3 className="card-title">{card4Title}</h3>
             <p className="card-body">{card4Body}</p>
           </div>
-
           <div className="card">
-            <article className="card-icon"><FaHandsHelping className="text-blue-500" focusable="false" /></article>
+            <span className="card-icon"><FaHandsHelping className="text-blue-500" /></span>
             <h3 className="card-title">{card5Title}</h3>
             <p className="card-body">{card5Body}</p>
           </div>
-
           <div className="card">
-            <article className="card-icon"><FaShieldAlt className="text-blue-500" focusable="false" /></article>
+            <span className="card-icon"><FaShieldAlt className="text-blue-500" /></span>
             <h3 className="card-title">{card6Title}</h3>
             <p className="card-body">{card6Body}</p>
           </div>

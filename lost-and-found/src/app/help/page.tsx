@@ -18,7 +18,7 @@ const FAQ_CATEGORIES = [
   {
     id: "getting-started",
     label: "Getting Started",
-    icon: "🚀",
+    icon: "",
     questions: [
       {
         q: "What is Findr?",
@@ -37,7 +37,7 @@ const FAQ_CATEGORIES = [
   {
     id: "finding-items",
     label: "Finding Items",
-    icon: "🔍",
+    icon: "",
     questions: [
       {
         q: "How do I search for a lost item?",
@@ -60,7 +60,7 @@ const FAQ_CATEGORIES = [
   {
     id: "posting-items",
     label: "Posting Found Items",
-    icon: "📦",
+    icon: "",
     questions: [
       {
         q: "How do I post a found item?",
@@ -79,7 +79,7 @@ const FAQ_CATEGORIES = [
   {
     id: "claiming",
     label: "Claiming & Retrieval",
-    icon: "🤝",
+    icon: "",
     questions: [
       {
         q: "How do I claim an item I lost?",
@@ -98,7 +98,7 @@ const FAQ_CATEGORIES = [
   {
     id: "admin",
     label: "Admin",
-    icon: "🔐",
+    icon: "",
     questions: [
       {
         q: "How do I become an admin?",
@@ -117,7 +117,7 @@ const FAQ_CATEGORIES = [
   {
     id: "settings",
     label: "Settings",
-    icon: "⚙️",
+    icon: "",
     questions: [
       {
         q: "Can I change the language?",
@@ -201,7 +201,7 @@ function GroqChatbot() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
-      content: "Hey! I'm Findr's support assistant. Ask me anything about how to use the app 👋",
+      content: "Hey! I'm Findr's support assistant. Ask me anything about how to use the app ",
     },
   ]);
   const [input, setInput] = useState("");
@@ -253,7 +253,7 @@ function GroqChatbot() {
   return (
     <>
       <p className="chatbot-intro">
-        Powered by <strong>Groq</strong> — the same AI that reads item photos in Findr. Ask anything about how the app works.
+        Powered by <strong>Groq</strong> —  Ask anything about how the app works.
       </p>
 
       <div className="chatbot">
@@ -333,9 +333,9 @@ export default function HelpPage() {
               className={activeSection === s ? "active" : ""}
               onClick={() => setActiveSection(s)}
             >
-              {s === "guide" && "📖 Quick Start"}
-              {s === "faq" && "❓ FAQs"}
-              {s === "chat" && "🤖 AI Support"}
+              {s === "guide" && " Quick Start"}
+              {s === "faq" && " FAQs"}
+              {s === "chat" && " AI Support"}
             </button>
           ))}
         </div>
