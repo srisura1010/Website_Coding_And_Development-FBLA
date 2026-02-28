@@ -1,6 +1,5 @@
 "use client";
 
-
 import "./dashboard.css";
 import { useItems } from "@/context/ItemsContext";
 import { useUser } from "@clerk/nextjs";
@@ -11,7 +10,6 @@ import { useEffect, useState, useRef } from "react";
 import { getConversationId } from "@/app/components/MessagingSystem";
 import { FaHandshakeAngle } from "react-icons/fa6";
 import { FaFlag } from "react-icons/fa6";
-
 
 // ─────────────────────────────────────────────
 // Types
@@ -50,11 +48,14 @@ interface Report {
   reporter_email: string;
   reason: string;
   created_at: string;
+  items: {
+    author_name: string;
+    author_email: string;
+    author_id: string;
+  } | null;
 }
 
-
 type TabId = "items" | "add-item" | "become-admin" | "admin-login" | "reported-items";
-
 
 const REPORT_REASONS = [
   "Inappropriate content",
@@ -64,7 +65,6 @@ const REPORT_REASONS = [
   "Other",
 ];
 
-
 const SIDEBAR_TABS: { id: TabId; label: string; icon: React.ReactNode; adminOnly?: boolean }[] = [
   { id: "items", label: "Items", icon: "" },
   { id: "add-item", label: "Add Item", icon: "" },
@@ -72,7 +72,6 @@ const SIDEBAR_TABS: { id: TabId; label: string; icon: React.ReactNode; adminOnly
   { id: "admin-login", label: "Admin", icon: "" },
   { id: "reported-items", label: "Reported Items", icon: "🚩", adminOnly: true },
 ];
-
 
 // ─────────────────────────────────────────────
 // Report Modal
@@ -91,7 +90,6 @@ function ReportModal({
   const [selectedReason, setSelectedReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
-
 
   const handleSubmit = async () => {
     if (!selectedReason || submitting) return;
@@ -112,7 +110,6 @@ function ReportModal({
       onClose();
     }, 1200);
   };
-
 
   return (
     <div className="report-modal-overlay" onClick={onClose}>
@@ -154,7 +151,6 @@ function ReportModal({
   );
 }
 
-
 // ─────────────────────────────────────────────
 // Chat Modal
 // ─────────────────────────────────────────────
@@ -175,7 +171,6 @@ function ChatModal({
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -208,11 +203,9 @@ function ChatModal({
     return () => { supabase.removeChannel(channel); };
   }, [conversationId]);
 
-
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
 
   const handleSend = async () => {
     if (!text.trim() || sending) return;
@@ -247,14 +240,12 @@ function ChatModal({
     setSending(false);
   };
 
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
-
 
   return (
     <div className="chat-modal-overlay" onClick={onClose}>
@@ -312,7 +303,6 @@ function ChatModal({
   );
 }
 
-
 // ─────────────────────────────────────────────
 // Become Admin Panel
 // ─────────────────────────────────────────────
@@ -323,7 +313,6 @@ function AdminPanel() {
   const [adminUploading, setAdminUploading] = useState(false);
   const [adminSuccess, setAdminSuccess] = useState(false);
 
-
   useEffect(() => {
     if (user) {
       setAdminForm((p) => ({
@@ -333,7 +322,6 @@ function AdminPanel() {
       }));
     }
   }, [user]);
-
 
   const handleAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -360,7 +348,6 @@ function AdminPanel() {
       setAdminUploading(false);
     }
   };
-
 
   return (
     <div className="panel-content">
@@ -404,7 +391,6 @@ function AdminPanel() {
   );
 }
 
-
 // ─────────────────────────────────────────────
 // Admin Login Panel
 // ─────────────────────────────────────────────
@@ -414,7 +400,6 @@ function AdminLoginPanel({ onUnlock }: { onUnlock: () => void }) {
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
-
 
   const handleCheck = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -434,7 +419,6 @@ function AdminLoginPanel({ onUnlock }: { onUnlock: () => void }) {
     setChecking(false);
   };
 
-
   if (unlocked) {
     return (
       <div className="panel-content">
@@ -446,7 +430,6 @@ function AdminLoginPanel({ onUnlock }: { onUnlock: () => void }) {
       </div>
     );
   }
-
 
   return (
     <div className="panel-content">
@@ -464,7 +447,6 @@ function AdminLoginPanel({ onUnlock }: { onUnlock: () => void }) {
   );
 }
 
-
 // ─────────────────────────────────────────────
 // Reported Items Panel (admin only)
 // ─────────────────────────────────────────────
@@ -472,23 +454,22 @@ function ReportedItemsPanel({ updateItemStatus }: { updateItemStatus: (id: numbe
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
 
-
   const fetchReports = async () => {
     setLoading(true);
-    const { data } = await supabase.from("reports").select("*").order("created_at", { ascending: false });
-    if (data) setReports(data);
+    const { data } = await supabase
+      .from("reports")
+      .select("*, items(author_name, author_email, author_id)")
+      .order("created_at", { ascending: false });
+    if (data) setReports(data as Report[]);
     setLoading(false);
   };
 
-
   useEffect(() => { fetchReports(); }, []);
-
 
   const handleDismiss = async (reportId: number) => {
     await supabase.from("reports").delete().eq("id", reportId);
     setReports((prev) => prev.filter((r) => r.id !== reportId));
   };
-
 
   const handleDeleteItem = async (report: Report) => {
     if (!confirm(`Delete "${report.item_name}" permanently?`)) return;
@@ -497,7 +478,6 @@ function ReportedItemsPanel({ updateItemStatus }: { updateItemStatus: (id: numbe
     updateItemStatus(report.item_id, "claimed");
     setReports((prev) => prev.filter((r) => r.item_id !== report.item_id));
   };
-
 
   return (
     <div className="panel-content">
@@ -516,6 +496,9 @@ function ReportedItemsPanel({ updateItemStatus }: { updateItemStatus: (id: numbe
               <p className="reported-card__meta">
                 Reported by {report.reporter_name} · {new Date(report.created_at).toLocaleDateString()}
               </p>
+              <p className="reported-card__meta" style={{ color: "#ef4444", marginTop: "2px" }}>
+                Posted by {report.items?.author_name ?? "Unknown"} · {report.items?.author_email ?? ""}
+              </p>
             </div>
             <div className="reported-card__actions">
               <button className="reported-card__dismiss" onClick={() => handleDismiss(report.id)}>Dismiss</button>
@@ -528,7 +511,6 @@ function ReportedItemsPanel({ updateItemStatus }: { updateItemStatus: (id: numbe
   );
 }
 
-
 // ─────────────────────────────────────────────
 // Dashboard Page
 // ─────────────────────────────────────────────
@@ -537,13 +519,11 @@ export default function DashboardPage() {
   const { user } = useUser();
   const { language } = useSettings();
 
-
   const [activeTab, setActiveTab] = useState<TabId>("items");
   const [isReady, setIsReady] = useState(false);
   const [activeChat, setActiveChat] = useState<ActiveChat | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [reportingItem, setReportingItem] = useState<any | null>(null);
-
 
   const [isAdmin, setIsAdmin] = useState(() => {
     if (typeof window !== "undefined") {
@@ -552,11 +532,9 @@ export default function DashboardPage() {
     return false;
   });
 
-
   useEffect(() => {
     localStorage.setItem("findr_is_admin", String(isAdmin));
   }, [isAdmin]);
-
 
   const [newItemName, setNewItemName] = useState("");
   const [newItemDesc, setNewItemDesc] = useState("");
@@ -564,8 +542,6 @@ export default function DashboardPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
-
-  // ── Translations ──────────────────────────
   const [addItemText, setAddItemText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_addItem_${language}`) || "+ Add Item" : "+ Add Item");
   const [reportFoundText, setReportFoundText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_reportFound_${language}`) || "Report Found Item" : "Report Found Item");
   const [itemNameText, setItemNameText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_itemName_${language}`) || "Item Name" : "Item Name");
@@ -580,7 +556,6 @@ export default function DashboardPage() {
   const [signInText, setSignInText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_signIn_${language}`) || "Please sign in to retrieve items" : "Please sign in to retrieve items");
   const [requestSentText, setRequestSentText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_requestSent_${language}`) || "Request sent! The owner has been notified." : "Request sent! The owner has been notified.");
   const [markedClaimedText, setMarkedClaimedText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_markedClaimed_${language}`) || "Item officially marked as claimed!" : "Item officially marked as claimed!");
-
 
   useEffect(() => {
     if (language === "en") {
@@ -619,7 +594,6 @@ export default function DashboardPage() {
     translateAndCache();
   }, [language]);
 
-
   const filteredItems = searchQuery.trim()
     ? (items ?? []).filter((item) => {
         const q = searchQuery.toLowerCase();
@@ -627,7 +601,6 @@ export default function DashboardPage() {
         return haystack.includes(q) || q.split(/\s+/).some((word) => haystack.includes(word));
       })
     : (items ?? []);
-
 
   const handleRetrieve = async (item: any) => {
     if (!user) return alert(signInText);
@@ -638,19 +611,16 @@ export default function DashboardPage() {
     alert(requestSentText);
   };
 
-
   const handleConfirmClaimed = async (itemId: number) => {
     const { error } = await supabase.from("items").delete().eq("id", itemId);
     if (!error) { updateItemStatus(itemId, "claimed"); alert(markedClaimedText); }
   };
-
 
   const handleDelete = async (itemId: number) => {
     if (!confirm("Delete this item permanently?")) return;
     const { error } = await supabase.from("items").delete().eq("id", itemId);
     if (!error) updateItemStatus(itemId, "claimed");
   };
-
 
   const handleOpenChat = (item: any) => {
     if (!user) return alert(signInText);
@@ -662,7 +632,6 @@ export default function DashboardPage() {
     );
     setActiveChat({ conversationId, item, otherUser: { uid: item.authorId, displayName: item.authorName || "Finder" } });
   };
-
 
   const extractKeywords = async (file: File): Promise<string> => {
     try {
@@ -678,7 +647,6 @@ export default function DashboardPage() {
       return keywords ?? "";
     } catch { return ""; }
   };
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -709,7 +677,6 @@ export default function DashboardPage() {
       setIsUploading(false);
     }
   };
-
 
   const renderPanel = () => {
     switch (activeTab) {
@@ -744,7 +711,6 @@ export default function DashboardPage() {
           </div>
         );
 
-
       case "add-item":
         return (
           <div className="panel-content">
@@ -774,24 +740,19 @@ export default function DashboardPage() {
           </div>
         );
 
-
       case "become-admin":
         return <AdminPanel />;
-
 
       case "admin-login":
         return <AdminLoginPanel onUnlock={() => setIsAdmin(true)} />;
 
-
       case "reported-items":
         return isAdmin ? <ReportedItemsPanel updateItemStatus={updateItemStatus} /> : null;
-
 
       default:
         return null;
     }
   };
-
 
   if (!isReady)
     return (
@@ -800,7 +761,6 @@ export default function DashboardPage() {
         <div className="dashboard-main" />
       </div>
     );
-
 
   return (
     <div className="dashboard-layout">
@@ -823,7 +783,6 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-
       <main className="dashboard-main">
         {isAdmin && (
           <div className="admin-banner">
@@ -832,7 +791,6 @@ export default function DashboardPage() {
             <button className="admin-banner__exit" onClick={() => { setIsAdmin(false); localStorage.removeItem("findr_is_admin"); }}>Exit Admin</button>
           </div>
         )}
-
 
         <div className="items-container">
           {filteredItems.filter((i) => i.status !== "claimed").map((item) => {
@@ -882,7 +840,6 @@ export default function DashboardPage() {
           )}
         </div>
 
-
         {reportingItem && user && (
           <ReportModal
             item={reportingItem}
@@ -891,7 +848,6 @@ export default function DashboardPage() {
             onSubmitted={() => setReportingItem(null)}
           />
         )}
-
 
         {activeChat && user && (
           <ChatModal
@@ -906,4 +862,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
