@@ -8,11 +8,9 @@ import { supabase } from "../../lib/supabaseClient";
 import Link from "next/dist/client/link";
 import { CiSettings } from "react-icons/ci";
 import { useSettings } from "@/context/SettingsContext";
+import { SUPER_ADMINS } from "@/lib/superAdmin";
 
-const SUPER_ADMINS = [
-  "bavu.ramki@gmail.com",
-  "srivatsav4ever@gmail.com",
-];
+// REMOVED: const SUPER_ADMINS = [...]
 
 export default function Navbar() {
   const { isSignedIn, user, isLoaded } = useUser();
@@ -136,7 +134,7 @@ export default function Navbar() {
               className="dashboard-link"
               onClick={() => router.push("/super-admin")}
             >
-               Super Admin
+              Super Admin
             </button>
           </li>
         )}
