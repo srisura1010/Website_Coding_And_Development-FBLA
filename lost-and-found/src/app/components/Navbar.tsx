@@ -9,12 +9,21 @@ import Link from "next/dist/client/link";
 import { CiSettings } from "react-icons/ci";
 import { useSettings } from "@/context/SettingsContext";
 
+const SUPER_ADMINS = [
+  "bavu.ramki@gmail.com",
+  "srivatsav4ever@gmail.com",
+];
+
 export default function Navbar() {
-  const { isSignedIn, user } = useUser();
+  const { isSignedIn, user, isLoaded } = useUser();
   const { language } = useSettings();
   const router = useRouter();
 
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const isSuperAdmin = isLoaded && SUPER_ADMINS.includes(
+    user?.primaryEmailAddress?.emailAddress ?? ""
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -107,6 +116,16 @@ export default function Navbar() {
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
+            </button>
+          </li>
+        )}
+        {isSuperAdmin && (
+          <li>
+            <button
+              className="dashboard-link"
+              onClick={() => router.push("/super-admin")}
+            >
+              ⚙️ Super Admin
             </button>
           </li>
         )}
