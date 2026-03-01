@@ -10,11 +10,10 @@ import "./settings.css";
 
 const SettingsPage = () => {
   const { theme, language, setTheme, setLanguage } = useSettings();
-  const { enabled: ttsEnabled, setEnabled: setTTSEnabled } = useTTS();
-  const { user } = useUser();
+  const { enabled: ttsEnabled, setEnabled: setTTSEnabled, rate: ttsRate, setRate: setTTSRate } = useTTS();
+  const { user, isLoaded } = useUser();
   const router = useRouter();
 
-  const [mounted, setMounted] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [banChecked, setBanChecked] = useState(false);
 
@@ -28,10 +27,11 @@ const SettingsPage = () => {
   const [enableTTSText, setEnableTTSText] = useState("Enable TTS");
   const [disableTTSText, setDisableTTSText] = useState("Disable TTS");
   const [settingsTitleText, setSettingsTitleText] = useState("Settings");
+  const [ttsSpeedText, setTTSSpeedText] = useState("Speed");
 
-  useEffect(() => { setMounted(true); }, []);
-
+  // ── Ban check — wait for Clerk to finish loading first ──
   useEffect(() => {
+    if (!isLoaded) return;
     if (!user) { setBanChecked(true); return; }
     const checkBan = async () => {
       const { data } = await supabase
@@ -47,10 +47,10 @@ const SettingsPage = () => {
       setBanChecked(true);
     };
     checkBan();
-  }, [user]);
+  }, [user, isLoaded]);
 
+  // ── Translations ──
   useEffect(() => {
-    if (!mounted) return;
     if (language === "en") {
       setSettingsTitleText("Settings");
       setAppearanceText("Appearance");
@@ -62,22 +62,24 @@ const SettingsPage = () => {
       setTTSText("Text-to-Speech");
       setEnableTTSText("Enable TTS");
       setDisableTTSText("Disable TTS");
+      setTTSSpeedText("Speed");
       setIsReady(true);
       return;
     }
-    const translations = [
-      { key: "Settings",        setter: setSettingsTitleText, cacheKey: "settings_title" },
-      { key: "Appearance",      setter: setAppearanceText,    cacheKey: "settings_appearance" },
-      { key: "Language",        setter: setLanguageText,      cacheKey: "settings_language" },
-      { key: "Light",           setter: setLightText,         cacheKey: "settings_light" },
-      { key: "Dark",            setter: setDarkText,          cacheKey: "settings_dark" },
-      { key: "High Contrast",   setter: setHighContrastText,  cacheKey: "settings_highContrast" },
-      { key: "Colorblind Mode", setter: setColorblindText,    cacheKey: "settings_colorblind" },
-      { key: "Text-to-Speech",  setter: setTTSText,           cacheKey: "settings_tts" },
-      { key: "Enable TTS",      setter: setEnableTTSText,     cacheKey: "settings_enableTTS" },
-      { key: "Disable TTS",     setter: setDisableTTSText,    cacheKey: "settings_disableTTS" },
-    ];
     const translateAndCache = async () => {
+      const translations = [
+        { key: "Settings",        setter: setSettingsTitleText, cacheKey: "settings_title" },
+        { key: "Appearance",      setter: setAppearanceText,    cacheKey: "settings_appearance" },
+        { key: "Language",        setter: setLanguageText,      cacheKey: "settings_language" },
+        { key: "Light",           setter: setLightText,         cacheKey: "settings_light" },
+        { key: "Dark",            setter: setDarkText,          cacheKey: "settings_dark" },
+        { key: "High Contrast",   setter: setHighContrastText,  cacheKey: "settings_highContrast" },
+        { key: "Colorblind Mode", setter: setColorblindText,    cacheKey: "settings_colorblind" },
+        { key: "Text-to-Speech",  setter: setTTSText,           cacheKey: "settings_tts" },
+        { key: "Enable TTS",      setter: setEnableTTSText,     cacheKey: "settings_enableTTS" },
+        { key: "Disable TTS",     setter: setDisableTTSText,    cacheKey: "settings_disableTTS" },
+        { key: "Speed",           setter: setTTSSpeedText,      cacheKey: "settings_ttsSpeed" },
+      ];
       for (const { key, setter, cacheKey } of translations) {
         const cached = localStorage.getItem(`${cacheKey}_${language}`);
         if (cached) { setter(cached); continue; }
@@ -98,14 +100,15 @@ const SettingsPage = () => {
       setIsReady(true);
     };
     translateAndCache();
-  }, [language, mounted]);
+  }, [language]);
 
-  if (!banChecked || !mounted || !isReady) return null;
+  if (!isLoaded || !banChecked || !isReady) return null;
 
   return (
-    <div className="settings-page">
+    <div className="settings-page" id="settings-page">
       <div className="settings-card">
         <h1>{settingsTitleText}</h1>
+
         <section className="settings-section">
           <h3>{appearanceText}</h3>
           <div className="theme-options">
@@ -115,6 +118,7 @@ const SettingsPage = () => {
             <button className={theme === "colorblind" ? "active" : ""} onClick={() => setTheme("colorblind")}>{colorblindText}</button>
           </div>
         </section>
+
         <section className="settings-section">
           <h3>{languageText}</h3>
           <div className="theme-options">
@@ -124,11 +128,33 @@ const SettingsPage = () => {
             <button className={language === "de" ? "active" : ""} onClick={() => setLanguage("de")}>Deutsch</button>
           </div>
         </section>
+
         <section className="settings-section">
           <h3>{ttsText}</h3>
-          <button className={ttsEnabled ? "active" : ""} onClick={() => setTTSEnabled(!ttsEnabled)}>
-            {ttsEnabled ? disableTTSText : enableTTSText}
-          </button>
+
+          <label className="tts-toggle">
+            <span>{ttsEnabled ? disableTTSText : enableTTSText}</span>
+            <div
+              className={`toggle-switch ${ttsEnabled ? "active" : ""}`}
+              onClick={() => setTTSEnabled(!ttsEnabled)}
+            >
+              <div className="toggle-knob" />
+            </div>
+          </label>
+
+          {ttsEnabled && (
+            <label className="tts-rate">
+              <span>{ttsSpeedText}: {ttsRate}x</span>
+              <input
+                type="range"
+                min="0.5"
+                max="2"
+                step="0.1"
+                value={ttsRate}
+                onChange={(e) => setTTSRate(parseFloat(e.target.value))}
+              />
+            </label>
+          )}
         </section>
       </div>
     </div>

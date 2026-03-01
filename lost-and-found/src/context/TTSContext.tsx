@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 interface TTSContextType {
   enabled: boolean;
   setEnabled: (val: boolean) => void;
+  rate: number;
+  setRate: (val: number) => void;
   announce: (text: string) => void;
   cancelSpeech: () => void;
 }
@@ -16,7 +18,6 @@ export const TTSProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const pathname = usePathname();
 
-  // Persist TTS toggle
   const [enabled, setEnabled] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("ttsEnabled") === "true";
@@ -24,18 +25,31 @@ export const TTSProvider: React.FC<{ children: React.ReactNode }> = ({
     return false;
   });
 
+  const [rate, setRateState] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      return parseFloat(localStorage.getItem("ttsRate") || "1");
+    }
+    return 1;
+  });
+
+  const rateRef = useRef<number>(rate);
+
+  const setRate = (val: number) => {
+    setRateState(val);
+    rateRef.current = val;
+    localStorage.setItem("ttsRate", val.toString());
+  };
+
   const speechRef = useRef<SpeechSynthesis>(
     typeof window !== "undefined" ? window.speechSynthesis : null,
   );
   const queueRef = useRef<string[]>([]);
   const speakingRef = useRef<boolean>(false);
 
-  // Save enabled state
   useEffect(() => {
     localStorage.setItem("ttsEnabled", enabled.toString());
   }, [enabled]);
 
-  // Stop all speech
   const cancelSpeech = () => {
     if (!speechRef.current) return;
     if (speechRef.current.speaking || speechRef.current.pending) {
@@ -45,7 +59,6 @@ export const TTSProvider: React.FC<{ children: React.ReactNode }> = ({
     speakingRef.current = false;
   };
 
-  // Recursive text extractor with spacing
   const extractText = (node: Node): string => {
     if (!node) return "";
     if (node.nodeType === Node.TEXT_NODE) return node.textContent || "";
@@ -59,7 +72,6 @@ export const TTSProvider: React.FC<{ children: React.ReactNode }> = ({
     return childrenText;
   };
 
-  // Speak a single utterance
   const speakNext = () => {
     if (!enabled || !speechRef.current || speakingRef.current) return;
     const next = queueRef.current.shift();
@@ -72,27 +84,25 @@ export const TTSProvider: React.FC<{ children: React.ReactNode }> = ({
     const utterance = new SpeechSynthesisUtterance(
       next.trim().replace(/\s+/g, " "),
     );
-    utterance.rate = 1;
+    utterance.rate = rateRef.current;
     utterance.pitch = 1;
 
     utterance.onend = () => {
       speakingRef.current = false;
-      speakNext(); // Automatically speak next in queue
+      speakNext();
     };
 
     speechRef.current.speak(utterance);
   };
 
-  // Add text to queue
   const announce = (text: string) => {
     if (!text) return;
     queueRef.current.push(text);
     if (!speakingRef.current) speakNext();
   };
 
-  // Read main page content on navigation
   useEffect(() => {
-    cancelSpeech(); // stop previous page speech
+    cancelSpeech();
     if (!enabled) return;
 
     const containers: HTMLElement[] = [
@@ -116,7 +126,6 @@ export const TTSProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   }, [pathname, enabled]);
 
-  // Observe dynamic content (new cards, messages, carousel updates)
   useEffect(() => {
     if (!enabled) return;
 
@@ -133,8 +142,6 @@ export const TTSProvider: React.FC<{ children: React.ReactNode }> = ({
           mutation.addedNodes.forEach((node) => {
             if (node.nodeType === 1) {
               let text = "";
-
-              // Special handling for carousel slides
               const element = node as Element;
               const carousel = element.closest?.(".carousel");
               if (carousel) {
@@ -145,7 +152,6 @@ export const TTSProvider: React.FC<{ children: React.ReactNode }> = ({
               } else {
                 text = extractText(node);
               }
-
               if (text) announce(text);
             }
           });
@@ -161,7 +167,7 @@ export const TTSProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <TTSContext.Provider
-      value={{ enabled, setEnabled, announce, cancelSpeech }}
+      value={{ enabled, setEnabled, rate, setRate, announce, cancelSpeech }}
     >
       {children}
     </TTSContext.Provider>

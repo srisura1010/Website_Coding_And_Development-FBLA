@@ -12,30 +12,31 @@ import { supabase } from "@/lib/supabaseClient";
 export default function Home() {
   const { language } = useSettings();
   const router = useRouter();
-  const { isSignedIn, user } = useUser();
+  const { isSignedIn, user, isLoaded } = useUser();
   const [isReady, setIsReady] = useState(false);
   const [banChecked, setBanChecked] = useState(false);
 
-  const [lostText, setLostText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`home_lost_${language}`) || "Lost Something?" : "Lost Something?");
-  const [dontPanicText, setDontPanicText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`home_panic_${language}`) || "Don't Panic." : "Don't Panic.");
-  const [connectingText, setConnectingText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`home_connecting_${language}`) || "Connecting student, staff, and schools and reuniting them with their lost items" : "Connecting student, staff, and schools and reuniting them with their lost items");
-  const [browseText, setBrowseText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`home_browse_${language}`) || "Browse Lost Items" : "Browse Lost Items");
-  const [reportText, setReportText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`home_report_${language}`) || "Report a Lost Item" : "Report a Lost Item");
-  const [card1Title, setCard1Title] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`home_card1Title_${language}`) || "One Place for Everything" : "One Place for Everything");
-  const [card2Title, setCard2Title] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`home_card2Title_${language}`) || "Designed for Campuses" : "Designed for Campuses");
-  const [card3Title, setCard3Title] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`home_card3Title_${language}`) || "Find Items Faster" : "Find Items Faster");
-  const [card4Title, setCard4Title] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`home_card4Title_${language}`) || "Search What Matters" : "Search What Matters");
-  const [card5Title, setCard5Title] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`home_card5Title_${language}`) || "Students Helping Students" : "Students Helping Students");
-  const [card6Title, setCard6Title] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`home_card6Title_${language}`) || "Secure by Design" : "Secure by Design");
-  const [card1Body, setCard1Body] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`home_card1Body_${language}`) || "Stop checking multiple offices or bulletin boards. All lost and found items live in one clean, searchable place." : "Stop checking multiple offices or bulletin boards. All lost and found items live in one clean, searchable place.");
-  const [card2Body, setCard2Body] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`home_card2Body_${language}`) || "Findr is made specifically for schools — from hallways to gyms to libraries — so nothing slips through the cracks." : "Findr is made specifically for schools — from hallways to gyms to libraries — so nothing slips through the cracks.");
-  const [card3Body, setCard3Body] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`home_card3Body_${language}`) || "Quickly match lost items with found ones and get belongings back to students in days, not weeks." : "Quickly match lost items with found ones and get belongings back to students in days, not weeks.");
-  const [card4Body, setCard4Body] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`home_card4Body_${language}`) || "Filter by category, location, and time to instantly narrow down results and spot your item." : "Filter by category, location, and time to instantly narrow down results and spot your item.");
-  const [card5Body, setCard5Body] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`home_card5Body_${language}`) || "Anyone can report a found item, creating a trusted, school-wide system that actually works." : "Anyone can report a found item, creating a trusted, school-wide system that actually works.");
-  const [card6Body, setCard6Body] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`home_card6Body_${language}`) || "Only your school community sees your items, keeping reports private and protected." : "Only your school community sees your items, keeping reports private and protected.");
+  const [lostText, setLostText] = useState("Lost Something?");
+  const [dontPanicText, setDontPanicText] = useState("Don't Panic.");
+  const [connectingText, setConnectingText] = useState("Connecting student, staff, and schools and reuniting them with their lost items");
+  const [browseText, setBrowseText] = useState("Browse Lost Items");
+  const [reportText, setReportText] = useState("Report a Lost Item");
+  const [card1Title, setCard1Title] = useState("One Place for Everything");
+  const [card2Title, setCard2Title] = useState("Designed for Campuses");
+  const [card3Title, setCard3Title] = useState("Find Items Faster");
+  const [card4Title, setCard4Title] = useState("Search What Matters");
+  const [card5Title, setCard5Title] = useState("Students Helping Students");
+  const [card6Title, setCard6Title] = useState("Secure by Design");
+  const [card1Body, setCard1Body] = useState("Stop checking multiple offices or bulletin boards. All lost and found items live in one clean, searchable place.");
+  const [card2Body, setCard2Body] = useState("Findr is made specifically for schools — from hallways to gyms to libraries — so nothing slips through the cracks.");
+  const [card3Body, setCard3Body] = useState("Quickly match lost items with found ones and get belongings back to students in days, not weeks.");
+  const [card4Body, setCard4Body] = useState("Filter by category, location, and time to instantly narrow down results and spot your item.");
+  const [card5Body, setCard5Body] = useState("Anyone can report a found item, creating a trusted, school-wide system that actually works.");
+  const [card6Body, setCard6Body] = useState("Only your school community sees your items, keeping reports private and protected.");
 
-  // ── Ban check ──
+  // ── Ban check — wait for Clerk to finish loading first ──
   useEffect(() => {
+    if (!isLoaded) return;
     if (!user) { setBanChecked(true); return; }
     const checkBan = async () => {
       const { data } = await supabase
@@ -51,7 +52,7 @@ export default function Home() {
       setBanChecked(true);
     };
     checkBan();
-  }, [user]);
+  }, [user, isLoaded]);
 
   useEffect(() => {
     if (language === "en") {
@@ -96,6 +97,8 @@ export default function Home() {
         { key: "Only your school community sees your items, keeping reports private and protected.", setter: setCard6Body, cacheKey: "home_card6Body" },
       ];
       for (const { key, setter, cacheKey } of translations) {
+        const cached = localStorage.getItem(`${cacheKey}_${language}`);
+        if (cached) { setter(cached); continue; }
         try {
           const res = await fetch("/api/translate", {
             method: "POST",
@@ -115,14 +118,7 @@ export default function Home() {
     translateAndCache();
   }, [language]);
 
-  if (!banChecked || !isReady) {
-    return (
-      <div className="relative min-h-screen overflow-hidden">
-        <div className="grid-background dark:block light:hidden" />
-        <div className="grid-background-light dark:hidden light:block" />
-      </div>
-    );
-  }
+  if (!isLoaded || !banChecked || !isReady) return null;
 
   return (
     <div className="relative min-h-screen overflow-hidden">
