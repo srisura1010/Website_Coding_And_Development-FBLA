@@ -84,7 +84,7 @@ export default function SuperAdminPage() {
 
       await supabase
         .from("admin_requests")
-        .update({ status: "approved" })
+        .delete()
         .eq("id", request.id);
 
       await emailjs.send(
@@ -94,9 +94,7 @@ export default function SuperAdminPage() {
         process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!
       );
 
-      setRequests((prev) =>
-        prev.map((r) => (r.id === request.id ? { ...r, status: "approved" } : r))
-      );
+      setRequests((prev) => prev.filter((r) => r.id !== request.id));
 
       alert(`✅ Approved! Password sent to ${request.email}`);
     } catch (err) {

@@ -605,7 +605,7 @@ export default function DashboardPage() {
     const checkBan = async () => {
       const { data } = await supabase
         .from("banned_users").select("email, suspended_until")
-        .eq("email", user.primaryEmailAddress?.emailAddress).single();
+        .eq("email", user.primaryEmailAddress?.emailAddress).maybeSingle();
       if (data) {
         const isPermanent = !data.suspended_until;
         const isSuspended = data.suspended_until && new Date(data.suspended_until) > new Date();
@@ -750,9 +750,9 @@ export default function DashboardPage() {
   };
 
   const handleMarkFound = async (itemId: number) => {
-    const { error } = await supabase.from("lost_items").update({ status: "found" }).eq("id", itemId);
-    if (!error) removeLostItem(itemId);
-  };
+  const { error } = await supabase.from("lost_items").delete().eq("id", itemId);
+  if (!error) removeLostItem(itemId);
+};
 
   const extractKeywords = async (file: File): Promise<string> => {
     try {
