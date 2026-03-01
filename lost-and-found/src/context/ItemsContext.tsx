@@ -138,6 +138,40 @@ export const ItemsProvider = ({ children }: { children: ReactNode }) => {
     fetchLostItems();
   }, []);
 
+  // ── Real-time item updates ──
+  useEffect(() => {
+    const channel = supabase
+      .channel("items-realtime")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "items" },
+        (payload) => {
+          const updated = payload.new;
+          setRawItems((prev) =>
+            prev.map((item) =>
+              item.id === updated.id
+                ? {
+                    ...item,
+                    status: updated.status,
+                    claimerEmail: updated.claimer_email,
+                  }
+                : item
+            )
+          );
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "items" },
+        (payload) => {
+          setRawItems((prev) => prev.filter((item) => item.id !== payload.old.id));
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   useEffect(() => {
     if (rawItems.length === 0) return;
     translateItems(rawItems, language).then(setItems);

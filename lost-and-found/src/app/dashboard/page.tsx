@@ -11,9 +11,6 @@ import { getConversationId } from "@/app/components/MessagingSystem";
 import { FaFlag } from "react-icons/fa6";
 import { useRouter } from "next/navigation";
 
-// ─────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────
 interface Message {
   id: number;
   conversation_id: string;
@@ -82,9 +79,6 @@ const SIDEBAR_TABS: { id: TabId; label: string; icon: React.ReactNode; adminOnly
   { id: "ban-management", label: "Ban Management",   icon: "", adminOnly: true },
 ];
 
-// ─────────────────────────────────────────────
-// Report Modal
-// ─────────────────────────────────────────────
 function ReportModal({
   item, currentUser, onClose, onSubmitted,
 }: {
@@ -150,9 +144,6 @@ function ReportModal({
   );
 }
 
-// ─────────────────────────────────────────────
-// Chat Modal
-// ─────────────────────────────────────────────
 function ChatModal({
   conversationId, item, currentUser, otherUser, onClose,
 }: {
@@ -169,11 +160,15 @@ function ChatModal({
 
   useEffect(() => {
     const fetchMessages = async () => {
-      const { data } = await supabase
-        .from("chat_messages").select("*")
+      const { data: messages } = await supabase
+        .from("chat_messages")
+        .select("*")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true });
-      if (data) setMessages(data);
+      
+      if (messages) {
+        setMessages(messages);
+      }
     };
     fetchMessages();
     const channel = supabase
@@ -255,9 +250,6 @@ function ChatModal({
   );
 }
 
-// ─────────────────────────────────────────────
-// Become Admin Panel
-// ─────────────────────────────────────────────
 function AdminPanel() {
   const { user } = useUser();
   const [adminForm, setAdminForm] = useState({ name: "", email: "", school: "", teacherId: "", extraInfo: "" });
@@ -347,9 +339,6 @@ function AdminPanel() {
   );
 }
 
-// ─────────────────────────────────────────────
-// Admin Login Panel
-// ─────────────────────────────────────────────
 function AdminLoginPanel({ onUnlock }: { onUnlock: () => void }) {
   const { user } = useUser();
   const [password, setPassword] = useState("");
@@ -404,9 +393,6 @@ function AdminLoginPanel({ onUnlock }: { onUnlock: () => void }) {
   );
 }
 
-// ─────────────────────────────────────────────
-// Reported Items Panel
-// ─────────────────────────────────────────────
 function ReportedItemsPanel({ updateItemStatus }: { updateItemStatus: (id: number, status: string) => void }) {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
@@ -468,9 +454,6 @@ function ReportedItemsPanel({ updateItemStatus }: { updateItemStatus: (id: numbe
   );
 }
 
-// ─────────────────────────────────────────────
-// Ban Management Panel
-// ─────────────────────────────────────────────
 function BanManagementPanel({ adminEmail }: { adminEmail: string }) {
   const [email, setEmail] = useState("");
   const [reason, setReason] = useState("");
@@ -542,44 +525,13 @@ function BanManagementPanel({ adminEmail }: { adminEmail: string }) {
         <textarea className="panel-form__textarea" placeholder="e.g. Spam, abusive messages, false claims..."
           value={reason} onChange={(e) => setReason(e.target.value)} required />
         <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
-  <button
-    type="button"
-    style={{
-      flex: 1,
-      padding: "10px",
-      borderRadius: "8px",
-      border: "1.5px solid #e2e8f0",
-      background: banType === "permanent" ? "#7c3aed" : "#f8fafc",
-      color: banType === "permanent" ? "#fff" : "#1e293b",
-      fontSize: "13px",
-      fontWeight: "600",
-      fontFamily: "Poppins, sans-serif",
-      cursor: "pointer",
-    }}
-    onClick={() => setBanType("permanent")}
-  >
-    🚫 Permanent
-  </button>
-
-  <button
-    type="button"
-    style={{
-      flex: 1,
-      padding: "10px",
-      borderRadius: "8px",
-      border: "1.5px solid #e2e8f0",
-      background: banType === "suspend" ? "#7c3aed" : "#f8fafc",
-      color: banType === "suspend" ? "#fff" : "#1e293b",
-      fontSize: "13px",
-      fontWeight: "600",
-      fontFamily: "Poppins, sans-serif",
-      cursor: "pointer",
-    }}
-    onClick={() => setBanType("suspend")}
-  >
-    ⏸ Suspend
-  </button>
-</div>
+          <button type="button"
+            style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1.5px solid #e2e8f0", background: banType === "permanent" ? "#7c3aed" : "#f8fafc", color: banType === "permanent" ? "#fff" : "#1e293b", fontSize: "13px", fontWeight: "600", fontFamily: "Poppins, sans-serif", cursor: "pointer" }}
+            onClick={() => setBanType("permanent")}>🚫 Permanent</button>
+          <button type="button"
+            style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1.5px solid #e2e8f0", background: banType === "suspend" ? "#7c3aed" : "#f8fafc", color: banType === "suspend" ? "#fff" : "#1e293b", fontSize: "13px", fontWeight: "600", fontFamily: "Poppins, sans-serif", cursor: "pointer" }}
+            onClick={() => setBanType("suspend")}>⏸ Suspend</button>
+        </div>
         {banType === "suspend" && (
           <>
             <label className="panel-form__label">Suspend for how many days?</label>
@@ -625,12 +577,9 @@ function BanManagementPanel({ adminEmail }: { adminEmail: string }) {
   );
 }
 
-// ─────────────────────────────────────────────
-// Dashboard Page
-// ─────────────────────────────────────────────
 export default function DashboardPage() {
   const { items, lostItems, addItem, addLostItem, updateItemStatus, removeLostItem } = useItems();
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
   const { language } = useSettings();
   const router = useRouter();
 
@@ -649,7 +598,9 @@ export default function DashboardPage() {
 
   useEffect(() => { localStorage.setItem("findr_is_admin", String(isAdmin)); }, [isAdmin]);
 
+  // ── Ban check — wait for Clerk to finish loading first ──
   useEffect(() => {
+    if (!isLoaded) return;
     if (!user) { setBanChecked(true); return; }
     const checkBan = async () => {
       const { data } = await supabase
@@ -663,7 +614,7 @@ export default function DashboardPage() {
       setBanChecked(true);
     };
     checkBan();
-  }, [user]);
+  }, [user, isLoaded]);
 
   // ── Lost item form state ──
   const [lostItemName, setLostItemName] = useState("");
@@ -680,20 +631,20 @@ export default function DashboardPage() {
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
   // ── Translations ──
-  const [addItemText, setAddItemText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_addItem_${language}`) || "+ Add Item" : "+ Add Item");
-  const [reportFoundText, setReportFoundText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_reportFound_${language}`) || "Report Found Item" : "Report Found Item");
-  const [itemNameText, setItemNameText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_itemName_${language}`) || "Item Name" : "Item Name");
-  const [descriptionText, setDescriptionText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_description_${language}`) || "Description (location, time, etc)" : "Description (location, time, etc)");
-  const [cancelText, setCancelText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_cancel_${language}`) || "Cancel" : "Cancel");
-  const [postItemText, setPostItemText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_postItem_${language}`) || "Post Item" : "Post Item");
-  const [uploadingText, setUploadingText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_uploading_${language}`) || "Uploading..." : "Uploading...");
-  const [foundByText, setFoundByText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_foundBy_${language}`) || "Found by:" : "Found by:");
-  const [retrieveText, setRetrieveText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_retrieve_${language}`) || "Retrieve" : "Retrieve");
-  const [confirmText, setConfirmText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_confirm_${language}`) || "Confirm Claimed" : "Confirm Claimed");
-  const [pendingText, setPendingText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_pending_${language}`) || "Item Claimed (Pending Confirmation)" : "Item Claimed (Pending Confirmation)");
-  const [signInText, setSignInText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_signIn_${language}`) || "Please sign in to retrieve items" : "Please sign in to retrieve items");
-  const [requestSentText, setRequestSentText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_requestSent_${language}`) || "Request sent! The owner has been notified." : "Request sent! The owner has been notified.");
-  const [markedClaimedText, setMarkedClaimedText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`dash_markedClaimed_${language}`) || "Item officially marked as claimed!" : "Item officially marked as claimed!");
+  const [addItemText, setAddItemText] = useState("+ Add Item");
+  const [reportFoundText, setReportFoundText] = useState("Report Found Item");
+  const [itemNameText, setItemNameText] = useState("Item Name");
+  const [descriptionText, setDescriptionText] = useState("Description (location, time, etc)");
+  const [cancelText, setCancelText] = useState("Cancel");
+  const [postItemText, setPostItemText] = useState("Post Item");
+  const [uploadingText, setUploadingText] = useState("Uploading...");
+  const [foundByText, setFoundByText] = useState("Found by:");
+  const [retrieveText, setRetrieveText] = useState("Retrieve");
+  const [confirmText, setConfirmText] = useState("Confirm Claimed");
+  const [pendingText, setPendingText] = useState("Item Claimed (Pending Confirmation)");
+  const [signInText, setSignInText] = useState("Please sign in to retrieve items");
+  const [requestSentText, setRequestSentText] = useState("Request sent! The owner has been notified.");
+  const [markedClaimedText, setMarkedClaimedText] = useState("Item officially marked as claimed!");
 
   useEffect(() => {
     if (language === "en") {
@@ -722,6 +673,8 @@ export default function DashboardPage() {
         { key: "Item officially marked as claimed!", setter: setMarkedClaimedText, cacheKey: "dash_markedClaimed" },
       ];
       for (const { key, setter, cacheKey } of translations) {
+        const cached = localStorage.getItem(`${cacheKey}_${language}`);
+        if (cached) { setter(cached); continue; }
         try {
           const res = await fetch("/api/translate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: key, target: language }) });
           if (res.ok) { const data = await res.json(); const t = data.translatedText || key; setter(t); localStorage.setItem(`${cacheKey}_${language}`, t); }
@@ -868,26 +821,16 @@ export default function DashboardPage() {
         }
       }
       const { data: insertedItem, error: insertError } = await supabase.from("lost_items").insert([{
-        name: lostItemName,
-        description: lostItemDesc,
-        image_url: imageUrl || null,
-        author_name: user.fullName || user.username || "Anonymous",
-        author_avatar: user.imageUrl,
-        author_id: user.id,
-        author_email: user.primaryEmailAddress?.emailAddress,
-        status: "looking",
+        name: lostItemName, description: lostItemDesc, image_url: imageUrl || null,
+        author_name: user.fullName || user.username || "Anonymous", author_avatar: user.imageUrl,
+        author_id: user.id, author_email: user.primaryEmailAddress?.emailAddress, status: "looking",
       }]).select().single();
       if (insertError) { console.error("Insert error:", insertError.message); return; }
       addLostItem({
-        id: insertedItem.id,
-        name: insertedItem.name,
-        description: insertedItem.description,
-        image: insertedItem.image_url || "",
-        authorName: insertedItem.author_name,
-        authorAvatar: insertedItem.author_avatar,
-        authorId: insertedItem.author_id,
-        authorEmail: insertedItem.author_email || "",
-        status: insertedItem.status,
+        id: insertedItem.id, name: insertedItem.name, description: insertedItem.description,
+        image: insertedItem.image_url || "", authorName: insertedItem.author_name,
+        authorAvatar: insertedItem.author_avatar, authorId: insertedItem.author_id,
+        authorEmail: insertedItem.author_email || "", status: insertedItem.status,
         created_at: insertedItem.created_at,
       });
       setLostItemName(""); setLostItemDesc(""); setLostSelectedFile(null); setLostItemSuccess(true);
@@ -899,9 +842,6 @@ export default function DashboardPage() {
     }
   };
 
-  // ─────────────────────────────────────────
-  // renderPanel
-  // ─────────────────────────────────────────
   const renderPanel = () => {
     switch (activeTab) {
       case "items":
@@ -927,7 +867,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ))}
-              {/* Lost items in sidebar */}
               {filteredLostItems.map((item) => (
                 <div key={`lost-${item.id}`} className="panel-item-chip"
                   onClick={() => {
@@ -937,9 +876,7 @@ export default function DashboardPage() {
                     }, 100);
                   }}>
                   <div style={{ width: 40, height: 40, borderRadius: 8, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", flexShrink: 0 }}>
-                    {item.image
-                      ? <img src={item.image} alt={item.name} className="panel-item-chip__img" />
-                      : "🔎"}
+                    {item.image ? <img src={item.image} alt={item.name} className="panel-item-chip__img" /> : "🔎"}
                   </div>
                   <div className="panel-item-chip__info">
                     <span className="panel-item-chip__name">{item.name}</span>
@@ -947,7 +884,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ))}
-
               {filteredItems.filter((i) => i.status !== "claimed").length === 0 && filteredLostItems.length === 0 && (
                 <p className="panel-empty">No items found.</p>
               )}
@@ -1050,13 +986,7 @@ export default function DashboardPage() {
     }
   };
 
-  if (!banChecked) return null;
-  if (!isReady) return (
-    <div className="dashboard-layout">
-      <div className="dashboard-sidebar" />
-      <div className="dashboard-main" />
-    </div>
-  );
+  if (!isLoaded || !banChecked || !isReady) return null;
 
   return (
     <div className="dashboard-layout">
@@ -1087,31 +1017,15 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ── Board tabs ── */}
         <div style={{ display: "flex", gap: "8px", padding: "16px 20px 0", borderBottom: "1px solid var(--border)" }}>
-          <button
-            onClick={() => setBoardTab("found")}
-            style={{
-              padding: "8px 20px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer",
-              fontWeight: 600, fontSize: "0.9rem",
-              background: boardTab === "found" ? "#f97316" : "var(--bg)",
-              color: boardTab === "found" ? "black" : "var(--text-muted)",
-            }}>
-             Found Items ({filteredItems.filter((inp) => inp.status !== "claimed").length})
+          <button onClick={() => setBoardTab("found")} style={{ padding: "8px 20px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem", background: boardTab === "found" ? "#f97316" : "var(--bg)", color: boardTab === "found" ? "black" : "var(--text-muted)" }}>
+            Found Items ({filteredItems.filter((inp) => inp.status !== "claimed").length})
           </button>
-          <button
-            onClick={() => setBoardTab("lost")}
-            style={{
-              padding: "8px 20px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer",
-              fontWeight: 600, fontSize: "0.9rem",
-              background: boardTab === "lost" ? "#f97316" : "var(--bg)",
-              color: boardTab === "lost" ? "white" : "var(--text-muted)",
-            }}>
-             Lost Items ({filteredLostItems.length})
+          <button onClick={() => setBoardTab("lost")} style={{ padding: "8px 20px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem", background: boardTab === "lost" ? "#f97316" : "var(--bg)", color: boardTab === "lost" ? "white" : "var(--text-muted)" }}>
+            Lost Items ({filteredLostItems.length})
           </button>
         </div>
 
-        {/* ── Found Items Board ── */}
         {boardTab === "found" && (
           <div className="items-container">
             {filteredItems.filter((i) => i.status !== "claimed").map((item) => {
@@ -1164,7 +1078,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ── Lost Items Board ── */}
         {boardTab === "lost" && (
           <div className="items-container">
             {filteredLostItems.map((item) => {
@@ -1179,11 +1092,7 @@ export default function DashboardPage() {
                     {item.image ? (
                       <img className="item-image" src={item.image} alt={item.name} />
                     ) : (
-                      <div style={{
-                        width: "100%", height: "100%",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        background: "#f1f5f9", color: "#94a3b8", fontSize: "2.5rem",
-                      }}>🔎</div>
+                      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", color: "#94a3b8", fontSize: "2.5rem" }}>🔎</div>
                     )}
                   </div>
                   <div className="item-info">
@@ -1196,8 +1105,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="button-group">
                     {!isItemOwner && (
-                      <button className="retrieve-button" style={{ background: "#f97316" }}
-                        onClick={() => handleOpenChat(item, true)}>
+                      <button className="retrieve-button" style={{ background: "#f97316" }} onClick={() => handleOpenChat(item, true)}>
                         I Found This!
                       </button>
                     )}
