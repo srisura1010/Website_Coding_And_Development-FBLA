@@ -5,6 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { useSettings } from "@/context/SettingsContext";
+import { FaFlag } from "react-icons/fa6";
 
 interface Message {
   id: number;
@@ -25,10 +26,19 @@ interface Conversation {
   item_title: string;
   otherUserId: string;
   otherUserName: string;
+  otherUserEmail: string;
   lastMessage: string;
   lastMessageAt: string;
   unread: boolean;
 }
+
+const USER_REPORT_REASONS = [
+  "Harassment or threats",
+  "Spam or scam",
+  "Fake or misleading identity",
+  "Inappropriate messages",
+  "Other",
+];
 
 async function t(text: string, language: string): Promise<string> {
   if (language === "en") return text;
@@ -51,6 +61,80 @@ async function t(text: string, language: string): Promise<string> {
   return text;
 }
 
+function ReportUserModal({
+  reportedUserId,
+  reportedUserName,
+  reportedUserEmail,
+  currentUser,
+  onClose,
+}: {
+  reportedUserId: string;
+  reportedUserName: string;
+  reportedUserEmail: string;
+  currentUser: { id: string; fullName: string | null; email: string };
+  onClose: () => void;
+}) {
+  const [selectedReason, setSelectedReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!selectedReason || submitting) return;
+    setSubmitting(true);
+    await supabase.from("user_reports").insert({
+      reporter_id: currentUser.id,
+      reporter_name: currentUser.fullName || "Anonymous",
+      reporter_email: currentUser.email,
+      reported_user_id: reportedUserId,
+      reported_user_name: reportedUserName,
+      reported_user_email: reportedUserEmail,
+      reason: selectedReason,
+    });
+    setDone(true);
+    setSubmitting(false);
+    setTimeout(onClose, 1200);
+  };
+
+  return (
+    <div className="report-modal-overlay" onClick={onClose}>
+      <div className="report-modal" onClick={(e) => e.stopPropagation()}>
+        {done ? (
+          <div className="panel-success">
+            <span className="panel-success__icon">✓</span>
+            <p>Report submitted</p>
+          </div>
+        ) : (
+          <>
+            <p className="report-modal__title">Report {reportedUserName}</p>
+            <p className="report-modal__subtitle">Why are you reporting this user?</p>
+            <div className="report-modal__reasons">
+              {USER_REPORT_REASONS.map((reason) => (
+                <button
+                  key={reason}
+                  className={`report-modal__reason${selectedReason === reason ? " report-modal__reason--selected" : ""}`}
+                  onClick={() => setSelectedReason(reason)}
+                >
+                  {reason}
+                </button>
+              ))}
+            </div>
+            <div className="report-modal__actions">
+              <button className="report-modal__cancel" onClick={onClose}>Cancel</button>
+              <button
+                className="report-modal__submit"
+                onClick={handleSubmit}
+                disabled={!selectedReason || submitting}
+              >
+                {submitting ? "Submitting..." : "Submit Report"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function MessagesPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
@@ -62,6 +146,7 @@ export default function MessagesPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [reportingUser, setReportingUser] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const [isReady, setIsReady] = useState(false);
@@ -145,6 +230,7 @@ export default function MessagesPage() {
             item_title: msg.item_title,
             otherUserId: isOwn ? msg.receiver_id : msg.sender_id,
             otherUserName: isOwn ? (msg.receiver_name || msg.receiver_id) : msg.sender_name,
+            otherUserEmail: isOwn ? (msg.receiver_email || "") : (msg.sender_email || ""),
             lastMessage: msg.text,
             lastMessageAt: msg.created_at,
             unread: !msg.read && msg.receiver_id === user.id,
@@ -247,8 +333,10 @@ export default function MessagesPage() {
       conversation_id: activeConvId,
       sender_id: user.id,
       sender_name: user.fullName || "Me",
+      sender_email: user.primaryEmailAddress?.emailAddress || "",
       receiver_id: activeConv.otherUserId,
       receiver_name: activeConv.otherUserName,
+      receiver_email: activeConv.otherUserEmail,
       item_id: activeConv.conversation_id.split("_")[0],
       item_title: activeConv.item_title,
       text: trimmed,
@@ -290,7 +378,7 @@ export default function MessagesPage() {
           {conversations.map((conv) => (
             <button
               key={conv.conversation_id}
-              onClick={() => setActiveConvId(conv.conversation_id)}
+              onClick={() => { setActiveConvId(conv.conversation_id); setReportingUser(false); }}
               style={{
                 width: "100%", padding: "14px 16px",
                 background: activeConvId === conv.conversation_id ? "#eff6ff" : "transparent",
@@ -349,6 +437,7 @@ export default function MessagesPage() {
           </div>
         ) : (
           <>
+            {/* Chat header with Report User button */}
             <div style={{
               padding: "14px 16px", borderBottom: "1px solid #e2e8f0",
               background: "#fff", display: "flex", alignItems: "center", gap: 10,
@@ -360,12 +449,19 @@ export default function MessagesPage() {
               }}>
                 {activeConv?.otherUserName?.[0]?.toUpperCase() ?? "?"}
               </div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>
                   {activeConv?.otherUserName}
                 </div>
                 <div style={{ fontSize: 12, color: "#64748b" }}>{activeConv?.item_title}</div>
               </div>
+              <button
+                onClick={() => setReportingUser(true)}
+                className="msg-report-btn"
+              >
+                <FaFlag style={{ fontSize: 11 }} />
+                Report User
+              </button>
             </div>
 
             <div style={{
@@ -441,6 +537,21 @@ export default function MessagesPage() {
           </>
         )}
       </div>
+
+      {/* Report User Modal */}
+      {reportingUser && activeConv && user && (
+        <ReportUserModal
+          reportedUserId={activeConv.otherUserId}
+          reportedUserName={activeConv.otherUserName}
+          reportedUserEmail={activeConv.otherUserEmail}
+          currentUser={{
+            id: user.id,
+            fullName: user.fullName,
+            email: user.primaryEmailAddress?.emailAddress || "",
+          }}
+          onClose={() => setReportingUser(false)}
+        />
+      )}
     </div>
   );
 }

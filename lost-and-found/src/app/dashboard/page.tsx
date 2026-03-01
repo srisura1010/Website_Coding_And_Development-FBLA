@@ -51,6 +51,16 @@ interface Report {
     author_id: string;
   } | null;
 }
+interface UserReport {
+  id: number;
+  reporter_name: string;
+  reporter_email: string;
+  reported_user_id: string;
+  reported_user_name: string;
+  reported_user_email: string;
+  reason: string;
+  created_at: string;
+}
 interface BannedUser {
   email: string;
   reason: string;
@@ -59,7 +69,7 @@ interface BannedUser {
   banned_by: string;
 }
 
-type TabId = "items" | "add-item" | "report-lost" | "become-admin" | "admin-login" | "reported-items" | "ban-management";
+type TabId = "items" | "add-item" | "report-lost" | "become-admin" | "admin-login" | "reports" | "ban-management";
 
 const REPORT_REASONS = [
   "Inappropriate content",
@@ -71,12 +81,12 @@ const REPORT_REASONS = [
 
 const SIDEBAR_TABS: { id: TabId; label: string; icon: React.ReactNode; adminOnly?: boolean }[] = [
   { id: "items",          label: "Items",            icon: "" },
-  { id: "add-item",       label: "Report Found Item",   icon: "" },
-  { id: "report-lost",    label: "Report Lost Item", icon: "" },
-  { id: "become-admin",   label: "Become an Admin",  icon: "" },
-  { id: "admin-login",    label: "Admin",            icon: "" },
-  { id: "reported-items", label: "Reported Items",   icon: "🚩", adminOnly: true },
-  { id: "ban-management", label: "Ban Management",   icon: "", adminOnly: true },
+  { id: "add-item",       label: "Report Found Item", icon: "" },
+  { id: "report-lost",    label: "Report Lost Item",  icon: "" },
+  { id: "become-admin",   label: "Become an Admin",   icon: "" },
+  { id: "admin-login",    label: "Admin",             icon: "" },
+  { id: "reports",        label: "Reports",           icon: "🚩", adminOnly: true },
+  { id: "ban-management", label: "Ban Management",    icon: "", adminOnly: true },
 ];
 
 function ReportModal({
@@ -165,10 +175,7 @@ function ChatModal({
         .select("*")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true });
-      
-      if (messages) {
-        setMessages(messages);
-      }
+      if (messages) setMessages(messages);
     };
     fetchMessages();
     const channel = supabase
@@ -422,34 +429,104 @@ function ReportedItemsPanel({ updateItemStatus }: { updateItemStatus: (id: numbe
     setReports((prev) => prev.filter((r) => r.item_id !== report.item_id));
   };
 
+  if (loading) return <p className="panel-empty">Loading...</p>;
+  if (reports.length === 0) return <p className="panel-empty">No item reports — all clear!</p>;
+
   return (
-    <div className="main-panel-content">
-      <div className="main-panel-section-title">Reported Items</div>
-      {loading && <p className="panel-empty">Loading...</p>}
-      {!loading && reports.length === 0 && <p className="panel-empty">No reports — all clear!</p>}
-      <div className="panel-item-list">
-        {reports.map((report) => (
-          <div key={report.id} className="reported-card">
-            {report.item_image && (
-              <img src={report.item_image} alt={report.item_name} className="reported-card__img" />
-            )}
-            <div className="reported-card__body">
-              <p className="reported-card__name">{report.item_name}</p>
-              <p className="reported-card__reason">{report.reason}</p>
-              <p className="reported-card__meta">
-                Reported by {report.reporter_name} · {new Date(report.created_at).toLocaleDateString()}
-              </p>
-              <p className="reported-card__meta" style={{ color: "#ef4444", marginTop: "2px" }}>
-                Posted by {report.items?.author_name ?? "Unknown"} · {report.items?.author_email ?? ""}
-              </p>
-            </div>
-            <div className="reported-card__actions">
-              <button className="reported-card__dismiss" onClick={() => handleDismiss(report.id)}>Dismiss</button>
-              <button className="reported-card__delete" onClick={() => handleDeleteItem(report)}>Delete Item</button>
-            </div>
+    <div className="panel-item-list">
+      {reports.map((report) => (
+        <div key={report.id} className="reported-card">
+          {report.item_image && (
+            <img src={report.item_image} alt={report.item_name} className="reported-card__img" />
+          )}
+          <div className="reported-card__body">
+            <p className="reported-card__name">{report.item_name}</p>
+            <p className="reported-card__reason">{report.reason}</p>
+            <p className="reported-card__meta">
+              Reported by {report.reporter_name} · {new Date(report.created_at).toLocaleDateString()}
+            </p>
+            <p className="reported-card__meta" style={{ color: "#ef4444", marginTop: "2px" }}>
+              Posted by {report.items?.author_name ?? "Unknown"} · {report.items?.author_email ?? ""}
+            </p>
           </div>
-        ))}
-      </div>
+          <div className="reported-card__actions">
+            <button className="reported-card__dismiss" onClick={() => handleDismiss(report.id)}>Dismiss</button>
+            <button className="reported-card__delete" onClick={() => handleDeleteItem(report)}>Delete Item</button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ReportedUsersPanel({ adminEmail }: { adminEmail: string }) {
+  const [reports, setReports] = useState<UserReport[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchReports = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("user_reports")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (data) setReports(data as UserReport[]);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchReports(); }, []);
+
+  const handleDismiss = async (reportId: number) => {
+    await supabase.from("user_reports").delete().eq("id", reportId);
+    setReports((prev) => prev.filter((r) => r.id !== reportId));
+  };
+
+  const handleBanUser = async (report: UserReport) => {
+    if (!confirm(`Permanently ban ${report.reported_user_name}?`)) return;
+    await supabase.from("banned_users").upsert({
+      email: report.reported_user_email,
+      reason: report.reason,
+      suspended_until: null,
+      banned_by: adminEmail,
+      banned_at: new Date().toISOString(),
+    });
+    await supabase.from("user_reports").delete().eq("reported_user_id", report.reported_user_id);
+    setReports((prev) => prev.filter((r) => r.reported_user_id !== report.reported_user_id));
+  };
+
+  if (loading) return <p className="panel-empty">Loading...</p>;
+  if (reports.length === 0) return <p className="panel-empty">No user reports — all clear!</p>;
+
+  return (
+    <div className="panel-item-list">
+      {reports.map((report) => (
+        <div key={report.id} className="reported-card">
+          <div className="reported-card__body">
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: "50%", background: "#7c3aed",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#fff", fontWeight: 700, fontSize: 13, flexShrink: 0,
+              }}>
+                {report.reported_user_name?.[0]?.toUpperCase() ?? "?"}
+              </div>
+              <p className="reported-card__name" style={{ margin: 0 }}>{report.reported_user_name}</p>
+            </div>
+            <p className="reported-card__reason">{report.reason}</p>
+            <p className="reported-card__meta">
+              Reported by {report.reporter_name} ({report.reporter_email}) · {new Date(report.created_at).toLocaleDateString()}
+            </p>
+            {report.reported_user_email && (
+              <p className="reported-card__meta" style={{ color: "#ef4444", marginTop: 2 }}>
+                User email: {report.reported_user_email}
+              </p>
+            )}
+          </div>
+          <div className="reported-card__actions">
+            <button className="reported-card__dismiss" onClick={() => handleDismiss(report.id)}>Dismiss</button>
+            <button className="reported-card__delete" onClick={() => handleBanUser(report)}>Ban User</button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -589,6 +666,7 @@ export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [reportingItem, setReportingItem] = useState<any | null>(null);
   const [boardTab, setBoardTab] = useState<"found" | "lost">("found");
+  const [reportsTab, setReportsTab] = useState<"items" | "users">("items");
 
   const [banChecked, setBanChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(() => {
@@ -598,7 +676,6 @@ export default function DashboardPage() {
 
   useEffect(() => { localStorage.setItem("findr_is_admin", String(isAdmin)); }, [isAdmin]);
 
-  // ── Ban check — wait for Clerk to finish loading first ──
   useEffect(() => {
     if (!isLoaded) return;
     if (!user) { setBanChecked(true); return; }
@@ -616,21 +693,18 @@ export default function DashboardPage() {
     checkBan();
   }, [user, isLoaded]);
 
-  // ── Lost item form state ──
   const [lostItemName, setLostItemName] = useState("");
   const [lostItemDesc, setLostItemDesc] = useState("");
   const [lostItemUploading, setLostItemUploading] = useState(false);
   const [lostItemSuccess, setLostItemSuccess] = useState(false);
   const [lostSelectedFile, setLostSelectedFile] = useState<File | null>(null);
 
-  // ── Found item form state ──
   const [newItemName, setNewItemName] = useState("");
   const [newItemDesc, setNewItemDesc] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  // ── Translations ──
   const [addItemText, setAddItemText] = useState("+ Add Item");
   const [reportFoundText, setReportFoundText] = useState("Report Found Item");
   const [itemNameText, setItemNameText] = useState("Item Name");
@@ -750,9 +824,9 @@ export default function DashboardPage() {
   };
 
   const handleMarkFound = async (itemId: number) => {
-  const { error } = await supabase.from("lost_items").delete().eq("id", itemId);
-  if (!error) removeLostItem(itemId);
-};
+    const { error } = await supabase.from("lost_items").delete().eq("id", itemId);
+    if (!error) removeLostItem(itemId);
+  };
 
   const extractKeywords = async (file: File): Promise<string> => {
     try {
@@ -843,7 +917,6 @@ export default function DashboardPage() {
   };
 
   const renderMainContent = () => {
-    // Non-items tabs render their content in the main area
     switch (activeTab) {
       case "add-item":
         return (
@@ -929,8 +1002,54 @@ export default function DashboardPage() {
       case "admin-login":
         return <AdminLoginPanel onUnlock={() => setIsAdmin(true)} />;
 
-      case "reported-items":
-        return isAdmin ? <ReportedItemsPanel updateItemStatus={updateItemStatus} /> : null;
+      case "reports":
+        return isAdmin ? (
+          <>
+            {/* Inner subtab bar — same pattern as Found/Lost */}
+            <div style={{
+              display: "flex", gap: "8px",
+              padding: "16px 20px 0",
+              borderBottom: "1px solid #e8eaf0",
+            }}>
+              <button
+                onClick={() => setReportsTab("items")}
+                style={{
+                  padding: "8px 20px", borderRadius: "8px 8px 0 0",
+                  border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem",
+                  fontFamily: "Poppins, sans-serif",
+                  background: reportsTab === "items" ? "#ef4444" : "var(--bg, #f0f2f8)",
+                  color: reportsTab === "items" ? "#fff" : "#64748b",
+                }}
+              >
+                Reported Items
+              </button>
+              <button
+                onClick={() => setReportsTab("users")}
+                style={{
+                  padding: "8px 20px", borderRadius: "8px 8px 0 0",
+                  border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem",
+                  fontFamily: "Poppins, sans-serif",
+                  background: reportsTab === "users" ? "#ef4444" : "var(--bg, #f0f2f8)",
+                  color: reportsTab === "users" ? "#fff" : "#64748b",
+                }}
+              >
+                Reported Users
+              </button>
+            </div>
+
+            <div className="main-panel-content" style={{ maxWidth: "720px" }}>
+              <div className="main-panel-section-title">
+                {reportsTab === "items" ? "Reported Items" : "Reported Users"}
+              </div>
+              {reportsTab === "items" && (
+                <ReportedItemsPanel updateItemStatus={updateItemStatus} />
+              )}
+              {reportsTab === "users" && (
+                <ReportedUsersPanel adminEmail={user?.primaryEmailAddress?.emailAddress ?? ""} />
+              )}
+            </div>
+          </>
+        ) : null;
 
       case "ban-management":
         return isAdmin ? <BanManagementPanel adminEmail={user?.primaryEmailAddress?.emailAddress ?? ""} /> : null;

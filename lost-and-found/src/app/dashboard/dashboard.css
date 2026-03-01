@@ -1341,3 +1341,28 @@
 
 
 .reported-card__delete:hover { background: #dc2626; }
+
+/* ═══════════════════════════════════════════
+   MESSAGES PAGE — REPORT USER BUTTON
+═══════════════════════════════════════════ */
+.msg-report-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: 1.5px solid #fecaca;
+  border-radius: 8px;
+  padding: 5px 10px;
+  cursor: pointer;
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.msg-report-btn:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+}
