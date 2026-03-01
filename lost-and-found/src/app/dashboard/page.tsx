@@ -541,15 +541,45 @@ function BanManagementPanel({ adminEmail }: { adminEmail: string }) {
         <label className="panel-form__label">Reason</label>
         <textarea className="panel-form__textarea" placeholder="e.g. Spam, abusive messages, false claims..."
           value={reason} onChange={(e) => setReason(e.target.value)} required />
-        <label className="panel-form__label">Ban Type</label>
         <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
-          <button type="button"
-            style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "1px solid var(--border)", background: banType === "permanent" ? "var(--accent)" : "transparent", color: banType === "permanent" ? "white" : "inherit", cursor: "pointer", fontSize: "0.85rem" }}
-            onClick={() => setBanType("permanent")}>🚫 Permanent</button>
-          <button type="button"
-            style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "1px solid var(--border)", background: banType === "suspend" ? "var(--accent)" : "transparent", color: banType === "suspend" ? "white" : "inherit", cursor: "pointer", fontSize: "0.85rem" }}
-            onClick={() => setBanType("suspend")}>⏸ Suspend</button>
-        </div>
+  <button
+    type="button"
+    style={{
+      flex: 1,
+      padding: "10px",
+      borderRadius: "8px",
+      border: "1.5px solid #e2e8f0",
+      background: banType === "permanent" ? "#7c3aed" : "#f8fafc",
+      color: banType === "permanent" ? "#fff" : "#1e293b",
+      fontSize: "13px",
+      fontWeight: "600",
+      fontFamily: "Poppins, sans-serif",
+      cursor: "pointer",
+    }}
+    onClick={() => setBanType("permanent")}
+  >
+    🚫 Permanent
+  </button>
+
+  <button
+    type="button"
+    style={{
+      flex: 1,
+      padding: "10px",
+      borderRadius: "8px",
+      border: "1.5px solid #e2e8f0",
+      background: banType === "suspend" ? "#7c3aed" : "#f8fafc",
+      color: banType === "suspend" ? "#fff" : "#1e293b",
+      fontSize: "13px",
+      fontWeight: "600",
+      fontFamily: "Poppins, sans-serif",
+      cursor: "pointer",
+    }}
+    onClick={() => setBanType("suspend")}
+  >
+    ⏸ Suspend
+  </button>
+</div>
         {banType === "suspend" && (
           <>
             <label className="panel-form__label">Suspend for how many days?</label>
