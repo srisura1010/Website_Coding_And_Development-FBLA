@@ -1093,6 +1093,19 @@ export default function DashboardPage() {
           renderMainContent()
         ) : (
           <>
+            <div className="panel-search" style={{ margin: "16px 20px 0" }}>
+              <span className="panel-search__icon">🔍</span>
+              <input
+                className="panel-search__input"
+                placeholder="Search items..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button className="panel-search__clear" onClick={() => setSearchQuery("")}>×</button>
+              )}
+            </div>
+
             <div style={{ display: "flex", gap: "8px", padding: "16px 20px 0", borderBottom: "1px solid var(--border)" }}>
               <button onClick={() => setBoardTab("found")} style={{ padding: "8px 20px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem", background: boardTab === "found" ? "#f97316" : "var(--bg)", color: boardTab === "found" ? "black" : "var(--text-muted)" }}>
                 Found Items ({filteredItems.filter((inp) => inp.status !== "claimed").length})
