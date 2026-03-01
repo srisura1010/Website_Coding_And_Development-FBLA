@@ -71,7 +71,7 @@ const REPORT_REASONS = [
 
 const SIDEBAR_TABS: { id: TabId; label: string; icon: React.ReactNode; adminOnly?: boolean }[] = [
   { id: "items",          label: "Items",            icon: "" },
-  { id: "add-item",       label: "Add Found Item",   icon: "" },
+  { id: "add-item",       label: "Report Found Item",   icon: "" },
   { id: "report-lost",    label: "Report Lost Item", icon: "" },
   { id: "become-admin",   label: "Become an Admin",  icon: "" },
   { id: "admin-login",    label: "Admin",            icon: "" },
@@ -294,8 +294,8 @@ function AdminPanel() {
   };
 
   return (
-    <div className="panel-content">
-      <div className="panel-section-title">Become an Admin</div>
+    <div className="main-panel-content">
+      <div className="main-panel-section-title">Become an Admin</div>
       {adminSuccess ? (
         <div className="panel-success">
           <span className="panel-success__icon">✓</span>
@@ -366,7 +366,7 @@ function AdminLoginPanel({ onUnlock }: { onUnlock: () => void }) {
 
   if (unlocked) {
     return (
-      <div className="panel-content">
+      <div className="main-panel-content">
         <div className="panel-success">
           <span className="panel-success__icon">✓</span>
           <p>Admin view unlocked!</p>
@@ -377,8 +377,8 @@ function AdminLoginPanel({ onUnlock }: { onUnlock: () => void }) {
   }
 
   return (
-    <div className="panel-content">
-      <div className="panel-section-title">Admin Access</div>
+    <div className="main-panel-content">
+      <div className="main-panel-section-title">Admin Access</div>
       <p className="admin-login__hint">Enter the password from your approval email.</p>
       <form className="panel-form" onSubmit={handleCheck}>
         <label className="panel-form__label">Admin Password</label>
@@ -423,8 +423,8 @@ function ReportedItemsPanel({ updateItemStatus }: { updateItemStatus: (id: numbe
   };
 
   return (
-    <div className="panel-content">
-      <div className="panel-section-title">Reported Items</div>
+    <div className="main-panel-content">
+      <div className="main-panel-section-title">Reported Items</div>
       {loading && <p className="panel-empty">Loading...</p>}
       {!loading && reports.length === 0 && <p className="panel-empty">No reports — all clear!</p>}
       <div className="panel-item-list">
@@ -514,8 +514,8 @@ function BanManagementPanel({ adminEmail }: { adminEmail: string }) {
   };
 
   return (
-    <div className="panel-content">
-      <div className="panel-section-title">Ban Management</div>
+    <div className="main-panel-content">
+      <div className="main-panel-section-title">Ban Management</div>
       <p className="admin-login__hint">Ban or suspend users by their account email.</p>
       <form className="panel-form" onSubmit={handleBan}>
         <label className="panel-form__label">User Email</label>
@@ -545,7 +545,7 @@ function BanManagementPanel({ adminEmail }: { adminEmail: string }) {
           {loading ? "Processing..." : banType === "permanent" ? "Ban User" : "Suspend User"}
         </button>
       </form>
-      <div className="panel-section-title" style={{ marginTop: "1.5rem" }}>Active Bans & Suspensions</div>
+      <div className="main-panel-section-title" style={{ marginTop: "1.5rem" }}>Active Bans & Suspensions</div>
       {fetchingList ? (
         <p className="panel-empty">Loading...</p>
       ) : bannedUsers.length === 0 ? (
@@ -842,59 +842,13 @@ export default function DashboardPage() {
     }
   };
 
-  const renderPanel = () => {
+  const renderMainContent = () => {
+    // Non-items tabs render their content in the main area
     switch (activeTab) {
-      case "items":
-        return (
-          <div className="panel-content">
-            <div className="panel-section-title">All Items</div>
-            <div className="panel-search">
-              <svg className="panel-search__icon" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-              </svg>
-              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search items..." className="panel-search__input" />
-              {searchQuery && <button className="panel-search__clear" onClick={() => setSearchQuery("")}>×</button>}
-            </div>
-            <div className="panel-item-list">
-              {filteredItems.filter((i) => i.status !== "claimed").map((item) => (
-                <div key={item.id} className="panel-item-chip"
-                  onClick={() => document.getElementById(`item-${item.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })}>
-                  <img src={item.image} alt={item.name} className="panel-item-chip__img" />
-                  <div className="panel-item-chip__info">
-                    <span className="panel-item-chip__name">{item.name}</span>
-                    <span className={`panel-item-chip__status panel-item-chip__status--${item.status}`}>{item.status}</span>
-                  </div>
-                </div>
-              ))}
-              {filteredLostItems.map((item) => (
-                <div key={`lost-${item.id}`} className="panel-item-chip"
-                  onClick={() => {
-                    setBoardTab("lost");
-                    setTimeout(() => {
-                      document.getElementById(`lost-item-${item.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-                    }, 100);
-                  }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 8, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", flexShrink: 0 }}>
-                    {item.image ? <img src={item.image} alt={item.name} className="panel-item-chip__img" /> : "🔎"}
-                  </div>
-                  <div className="panel-item-chip__info">
-                    <span className="panel-item-chip__name">{item.name}</span>
-                    <span className="panel-item-chip__status" style={{ color: "#f97316" }}>lost</span>
-                  </div>
-                </div>
-              ))}
-              {filteredItems.filter((i) => i.status !== "claimed").length === 0 && filteredLostItems.length === 0 && (
-                <p className="panel-empty">No items found.</p>
-              )}
-            </div>
-          </div>
-        );
-
       case "add-item":
         return (
-          <div className="panel-content">
-            <div className="panel-section-title">{reportFoundText}</div>
+          <div className="main-panel-content">
+            <div className="main-panel-section-title">{reportFoundText}</div>
             {uploadSuccess ? (
               <div className="panel-success"><span className="panel-success__icon">✓</span><p>Item posted!</p></div>
             ) : (
@@ -931,8 +885,8 @@ export default function DashboardPage() {
 
       case "report-lost":
         return (
-          <div className="panel-content">
-            <div className="panel-section-title">Report Lost Item</div>
+          <div className="main-panel-content">
+            <div className="main-panel-section-title">Report Lost Item</div>
             {lostItemSuccess ? (
               <div className="panel-success"><span className="panel-success__icon">✓</span><p>Lost item reported!</p></div>
             ) : (
@@ -1002,7 +956,6 @@ export default function DashboardPage() {
             </button>
           ))}
         </div>
-        <div className="sidebar-panel" key={activeTab}>{renderPanel()}</div>
       </aside>
 
       <main className="dashboard-main">
@@ -1017,122 +970,128 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div style={{ display: "flex", gap: "8px", padding: "16px 20px 0", borderBottom: "1px solid var(--border)" }}>
-          <button onClick={() => setBoardTab("found")} style={{ padding: "8px 20px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem", background: boardTab === "found" ? "#f97316" : "var(--bg)", color: boardTab === "found" ? "black" : "var(--text-muted)" }}>
-            Found Items ({filteredItems.filter((inp) => inp.status !== "claimed").length})
-          </button>
-          <button onClick={() => setBoardTab("lost")} style={{ padding: "8px 20px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem", background: boardTab === "lost" ? "#f97316" : "var(--bg)", color: boardTab === "lost" ? "white" : "var(--text-muted)" }}>
-            Lost Items ({filteredLostItems.length})
-          </button>
-        </div>
+        {activeTab !== "items" ? (
+          renderMainContent()
+        ) : (
+          <>
+            <div style={{ display: "flex", gap: "8px", padding: "16px 20px 0", borderBottom: "1px solid var(--border)" }}>
+              <button onClick={() => setBoardTab("found")} style={{ padding: "8px 20px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem", background: boardTab === "found" ? "#f97316" : "var(--bg)", color: boardTab === "found" ? "black" : "var(--text-muted)" }}>
+                Found Items ({filteredItems.filter((inp) => inp.status !== "claimed").length})
+              </button>
+              <button onClick={() => setBoardTab("lost")} style={{ padding: "8px 20px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem", background: boardTab === "lost" ? "#f97316" : "var(--bg)", color: boardTab === "lost" ? "white" : "var(--text-muted)" }}>
+                Lost Items ({filteredLostItems.length})
+              </button>
+            </div>
 
-        {boardTab === "found" && (
-          <div className="items-container">
-            {filteredItems.filter((i) => i.status !== "claimed").map((item) => {
-              const currentStatus = item.status || "waiting";
-              const isItemOwner = user?.id === item.authorId;
-              return (
-                <div key={item.id} id={`item-${item.id}`} className={`item-card${isAdmin ? " item-card--admin" : ""}`}>
-                  <button className="report-flag" onClick={() => setReportingItem(item)}>
-                    <FaFlag />
-                    <span className="report-flag__tooltip">Report</span>
-                  </button>
-                  <div className="item-image-wrapper">
-                    <img className="item-image" src={item.image} alt={item.name} />
-                  </div>
-                  <div className="item-info">
-                    <h3>{item.name}</h3>
-                    <div className="posted-by">
-                      {item.authorAvatar && <img src={item.authorAvatar} alt="User" className="posted-by__avatar" />}
-                      <span>{foundByText} {item.authorName || "Anonymous"}</span>
+            {boardTab === "found" && (
+              <div className="items-container">
+                {filteredItems.filter((i) => i.status !== "claimed").map((item) => {
+                  const currentStatus = item.status || "waiting";
+                  const isItemOwner = user?.id === item.authorId;
+                  return (
+                    <div key={item.id} id={`item-${item.id}`} className={`item-card${isAdmin ? " item-card--admin" : ""}`}>
+                      <button className="report-flag" onClick={() => setReportingItem(item)}>
+                        <FaFlag />
+                        <span className="report-flag__tooltip">Report</span>
+                      </button>
+                      <div className="item-image-wrapper">
+                        <img className="item-image" src={item.image} alt={item.name} />
+                      </div>
+                      <div className="item-info">
+                        <h3>{item.name}</h3>
+                        <div className="posted-by">
+                          {item.authorAvatar && <img src={item.authorAvatar} alt="User" className="posted-by__avatar" />}
+                          <span>{foundByText} {item.authorName || "Anonymous"}</span>
+                        </div>
+                        <p>{item.description}</p>
+                      </div>
+                      <div className="button-group">
+                        {currentStatus === "waiting" && !isItemOwner && (
+                          <button className="retrieve-button" onClick={() => handleRetrieve(item)}>{retrieveText}</button>
+                        )}
+                        {currentStatus === "pending" && (
+                          isItemOwner ? (
+                            <button className="confirm-button" onClick={() => handleConfirmClaimed(item.id)}>{confirmText}</button>
+                          ) : (
+                            <button className="pending-button" disabled>{pendingText}</button>
+                          )
+                        )}
+                        {!isItemOwner && (
+                          <button className="message-finder-button" onClick={() => handleOpenChat(item)}>Message Finder</button>
+                        )}
+                        {isAdmin && (
+                          <button className="delete-button" onClick={() => handleDelete(item.id)}>Delete Item</button>
+                        )}
+                      </div>
                     </div>
-                    <p>{item.description}</p>
+                  );
+                })}
+                {filteredItems.filter((i) => i.status !== "claimed").length === 0 && (
+                  <div className="empty-state">
+                    <p>{searchQuery ? `No items found for "${searchQuery}"` : "No found items posted yet."}</p>
+                    {searchQuery && <p>Try different keywords like color, type, or brand</p>}
                   </div>
-                  <div className="button-group">
-                    {currentStatus === "waiting" && !isItemOwner && (
-                      <button className="retrieve-button" onClick={() => handleRetrieve(item)}>{retrieveText}</button>
-                    )}
-                    {currentStatus === "pending" && (
-                      isItemOwner ? (
-                        <button className="confirm-button" onClick={() => handleConfirmClaimed(item.id)}>{confirmText}</button>
-                      ) : (
-                        <button className="pending-button" disabled>{pendingText}</button>
-                      )
-                    )}
-                    {!isItemOwner && (
-                      <button className="message-finder-button" onClick={() => handleOpenChat(item)}>Message Finder</button>
-                    )}
-                    {isAdmin && (
-                      <button className="delete-button" onClick={() => handleDelete(item.id)}>Delete Item</button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-            {filteredItems.filter((i) => i.status !== "claimed").length === 0 && (
-              <div className="empty-state">
-                <p>{searchQuery ? `No items found for "${searchQuery}"` : "No found items posted yet."}</p>
-                {searchQuery && <p>Try different keywords like color, type, or brand</p>}
+                )}
               </div>
             )}
-          </div>
-        )}
 
-        {boardTab === "lost" && (
-          <div className="items-container">
-            {filteredLostItems.map((item) => {
-              const isItemOwner = user?.id === item.authorId;
-              return (
-                <div key={item.id} id={`lost-item-${item.id}`} className={`item-card${isAdmin ? " item-card--admin" : ""}`}>
-                  <button className="report-flag" onClick={() => setReportingItem({ ...item, image: item.image || "" })}>
-                    <FaFlag />
-                    <span className="report-flag__tooltip">Report</span>
-                  </button>
-                  <div className="item-image-wrapper">
-                    {item.image ? (
-                      <img className="item-image" src={item.image} alt={item.name} />
-                    ) : (
-                      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", color: "#94a3b8", fontSize: "2.5rem" }}>🔎</div>
-                    )}
-                  </div>
-                  <div className="item-info">
-                    <h3>{item.name}</h3>
-                    <div className="posted-by">
-                      {item.authorAvatar && <img src={item.authorAvatar} alt="User" className="posted-by__avatar" />}
-                      <span>Lost by: {item.authorName || "Anonymous"}</span>
+            {boardTab === "lost" && (
+              <div className="items-container">
+                {filteredLostItems.map((item) => {
+                  const isItemOwner = user?.id === item.authorId;
+                  return (
+                    <div key={item.id} id={`lost-item-${item.id}`} className={`item-card${isAdmin ? " item-card--admin" : ""}`}>
+                      <button className="report-flag" onClick={() => setReportingItem({ ...item, image: item.image || "" })}>
+                        <FaFlag />
+                        <span className="report-flag__tooltip">Report</span>
+                      </button>
+                      <div className="item-image-wrapper">
+                        {item.image ? (
+                          <img className="item-image" src={item.image} alt={item.name} />
+                        ) : (
+                          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", color: "#94a3b8", fontSize: "2.5rem" }}>🔎</div>
+                        )}
+                      </div>
+                      <div className="item-info">
+                        <h3>{item.name}</h3>
+                        <div className="posted-by">
+                          {item.authorAvatar && <img src={item.authorAvatar} alt="User" className="posted-by__avatar" />}
+                          <span>Lost by: {item.authorName || "Anonymous"}</span>
+                        </div>
+                        <p>{item.description}</p>
+                      </div>
+                      <div className="button-group">
+                        {!isItemOwner && (
+                          <button className="retrieve-button" style={{ background: "#f97316" }} onClick={() => handleOpenChat(item, true)}>
+                            I Found This!
+                          </button>
+                        )}
+                        {isItemOwner && (
+                          <button className="confirm-button" onClick={() => handleMarkFound(item.id)}>
+                            Mark as Found
+                          </button>
+                        )}
+                        {!isItemOwner && (
+                          <button className="message-finder-button" onClick={() => handleOpenChat(item, true)}>
+                            Message Owner
+                          </button>
+                        )}
+                        {isAdmin && (
+                          <button className="delete-button" onClick={() => handleDeleteLostItem(item.id)}>Delete</button>
+                        )}
+                      </div>
                     </div>
-                    <p>{item.description}</p>
+                  );
+                })}
+                {filteredLostItems.length === 0 && (
+                  <div className="empty-state">
+                    <p>{searchQuery ? `No lost items found for "${searchQuery}"` : "No lost item reports yet."}</p>
+                    <p>Click "Report Lost Item" in the sidebar to post what you lost.</p>
                   </div>
-                  <div className="button-group">
-                    {!isItemOwner && (
-                      <button className="retrieve-button" style={{ background: "#f97316" }} onClick={() => handleOpenChat(item, true)}>
-                        I Found This!
-                      </button>
-                    )}
-                    {isItemOwner && (
-                      <button className="confirm-button" onClick={() => handleMarkFound(item.id)}>
-                        Mark as Found
-                      </button>
-                    )}
-                    {!isItemOwner && (
-                      <button className="message-finder-button" onClick={() => handleOpenChat(item, true)}>
-                        Message Owner
-                      </button>
-                    )}
-                    {isAdmin && (
-                      <button className="delete-button" onClick={() => handleDeleteLostItem(item.id)}>Delete</button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-            {filteredLostItems.length === 0 && (
-              <div className="empty-state">
-                <p>{searchQuery ? `No lost items found for "${searchQuery}"` : "No lost item reports yet."}</p>
-                <p>Click "Report Lost Item" in the sidebar to post what you lost.</p>
+                )}
               </div>
             )}
-          </div>
+          </>
         )}
 
         {reportingItem && user && (

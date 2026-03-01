@@ -32,7 +32,6 @@
   flex-direction: column;
   padding: 20px 12px 8px;
   gap: 4px;
-  border-bottom: 1px solid #e8eaf0;
 }
 
 
@@ -98,11 +97,24 @@
 }
 
 
-/* ── Panel content area ── */
-.sidebar-panel {
-  flex: 1;
-  overflow-y: auto;
+/* ── Main panel content (forms rendered in main area) ── */
+.main-panel-content {
+  max-width: 560px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   animation: panel-slide-in 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.main-panel-section-title {
+  font-family: "Poppins", sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 4px;
 }
 
 
@@ -336,7 +348,7 @@
 
 .panel-form__preview {
   width: 100%;
-  max-height: 120px;
+  max-height: 200px;
   object-fit: cover;
   display: block;
   border-radius: 8px;
@@ -895,6 +907,10 @@
     width: 100%;
     border-radius: 8px;
   }
+
+  .main-panel-content {
+    padding: 20px 16px;
+  }
 }
 
 
@@ -1325,4 +1341,3 @@
 
 
 .reported-card__delete:hover { background: #dc2626; }
-
