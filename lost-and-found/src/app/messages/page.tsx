@@ -56,6 +56,7 @@ export default function MessagesPage() {
   const router = useRouter();
   const { language } = useSettings();
 
+  const [banChecked, setBanChecked] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -63,7 +64,6 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // — UI string states —
   const [isReady, setIsReady] = useState(false);
   const [uiMessagesTitle, setUiMessagesTitle]           = useState("Messages");
   const [uiNoConversations, setUiNoConversations]       = useState("No conversations yet.");
@@ -71,7 +71,6 @@ export default function MessagesPage() {
   const [uiStartConversation, setUiStartConversation]   = useState("Start the conversation!");
   const [uiTypePlaceholder, setUiTypePlaceholder]       = useState("Type a message…");
 
-  // Translate UI labels whenever language changes
   useEffect(() => {
     const translateUI = async () => {
       setIsReady(false);
@@ -99,7 +98,28 @@ export default function MessagesPage() {
     if (isLoaded && !user) router.push("/");
   }, [isLoaded, user, router]);
 
-  // Load all conversations for this user
+  // ── Ban check ──
+  useEffect(() => {
+    if (!user) { setBanChecked(true); return; }
+    const checkBan = async () => {
+      const { data } = await supabase
+        .from("banned_users")
+        .select("email, suspended_until")
+        .eq("email", user.primaryEmailAddress?.emailAddress)
+        .single();
+      if (data) {
+        const isPermanent = !data.suspended_until;
+        const isSuspended = data.suspended_until && new Date(data.suspended_until) > new Date();
+        if (isPermanent || isSuspended) {
+          router.push("/banned");
+          return;
+        }
+      }
+      setBanChecked(true);
+    };
+    checkBan();
+  }, [user]);
+
   useEffect(() => {
     if (!user) return;
 
@@ -132,7 +152,6 @@ export default function MessagesPage() {
         }
       }
 
-      // Translate item titles and last message previews for the sidebar
       const convList = Array.from(convMap.values());
       if (language !== "en") {
         await Promise.all(
@@ -163,7 +182,6 @@ export default function MessagesPage() {
     return () => { supabase.removeChannel(channel); };
   }, [user, language]);
 
-  // Load messages for active conversation + translate them
   useEffect(() => {
     if (!activeConvId || !user) return;
 
@@ -173,7 +191,6 @@ export default function MessagesPage() {
         .eq("conversation_id", activeConvId).order("created_at", { ascending: true });
 
       if (data) {
-        // Translate message text if not English
         if (language !== "en") {
           const translated = await Promise.all(
             data.map(async (msg) => {
@@ -204,7 +221,6 @@ export default function MessagesPage() {
         filter: `conversation_id=eq.${activeConvId}`,
       }, async (payload) => {
         const newMsg = payload.new as Message;
-        // Translate incoming realtime message
         const translatedText = language !== "en" ? await t(newMsg.text, language) : newMsg.text;
         setMessages((prev) => [...prev, { ...newMsg, text: translatedText }]);
         if (newMsg.receiver_id === user.id) {
@@ -235,7 +251,7 @@ export default function MessagesPage() {
       receiver_name: activeConv.otherUserName,
       item_id: activeConv.conversation_id.split("_")[0],
       item_title: activeConv.item_title,
-      text: trimmed, // always store original in DB
+      text: trimmed,
       read: false,
     });
     setSending(false);
@@ -245,7 +261,7 @@ export default function MessagesPage() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
-  if (!isLoaded || !user || !isReady) return null;
+  if (!banChecked || !isLoaded || !user || !isReady) return null;
 
   return (
     <div style={{

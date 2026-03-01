@@ -8,8 +8,8 @@ import emailjs from "@emailjs/browser";
 import { useSettings } from "@/context/SettingsContext";
 import { useEffect, useState, useRef } from "react";
 import { getConversationId } from "@/app/components/MessagingSystem";
-import { FaHandshakeAngle } from "react-icons/fa6";
 import { FaFlag } from "react-icons/fa6";
+import { useRouter } from "next/navigation";
 
 // ─────────────────────────────────────────────
 // Types
@@ -54,8 +54,15 @@ interface Report {
     author_id: string;
   } | null;
 }
+interface BannedUser {
+  email: string;
+  reason: string;
+  suspended_until: string | null;
+  banned_at: string;
+  banned_by: string;
+}
 
-type TabId = "items" | "add-item" | "become-admin" | "admin-login" | "reported-items";
+type TabId = "items" | "add-item" | "become-admin" | "admin-login" | "reported-items" | "ban-management";
 
 const REPORT_REASONS = [
   "Inappropriate content",
@@ -66,21 +73,19 @@ const REPORT_REASONS = [
 ];
 
 const SIDEBAR_TABS: { id: TabId; label: string; icon: React.ReactNode; adminOnly?: boolean }[] = [
-  { id: "items", label: "Items", icon: "" },
-  { id: "add-item", label: "Add Item", icon: "" },
-  { id: "become-admin", label: "Become an Admin", icon: "" },
-  { id: "admin-login", label: "Admin", icon: "" },
-  { id: "reported-items", label: "Reported Items", icon: "🚩", adminOnly: true },
+  { id: "items",          label: "Items",           icon: "" },
+  { id: "add-item",       label: "Add Item",         icon: "" },
+  { id: "become-admin",   label: "Become an Admin",  icon: "" },
+  { id: "admin-login",    label: "Admin",            icon: "" },
+  { id: "reported-items", label: "Reported Items",   icon: "🚩", adminOnly: true },
+  { id: "ban-management", label: "Ban Management",   icon: "🔨", adminOnly: true },
 ];
 
 // ─────────────────────────────────────────────
 // Report Modal
 // ─────────────────────────────────────────────
 function ReportModal({
-  item,
-  currentUser,
-  onClose,
-  onSubmitted,
+  item, currentUser, onClose, onSubmitted,
 }: {
   item: any;
   currentUser: { uid: string; displayName: string; email: string };
@@ -105,10 +110,7 @@ function ReportModal({
     });
     setDone(true);
     setSubmitting(false);
-    setTimeout(() => {
-      onSubmitted();
-      onClose();
-    }, 1200);
+    setTimeout(() => { onSubmitted(); onClose(); }, 1200);
   };
 
   return (
@@ -136,11 +138,7 @@ function ReportModal({
             </div>
             <div className="report-modal__actions">
               <button className="report-modal__cancel" onClick={onClose}>Cancel</button>
-              <button
-                className="report-modal__submit"
-                onClick={handleSubmit}
-                disabled={!selectedReason || submitting}
-              >
+              <button className="report-modal__submit" onClick={handleSubmit} disabled={!selectedReason || submitting}>
                 {submitting ? "Submitting..." : "Submit Report"}
               </button>
             </div>
@@ -155,11 +153,7 @@ function ReportModal({
 // Chat Modal
 // ─────────────────────────────────────────────
 function ChatModal({
-  conversationId,
-  item,
-  currentUser,
-  otherUser,
-  onClose,
+  conversationId, item, currentUser, otherUser, onClose,
 }: {
   conversationId: string;
   item: ChatItem;
@@ -175,8 +169,7 @@ function ChatModal({
   useEffect(() => {
     const fetchMessages = async () => {
       const { data } = await supabase
-        .from("chat_messages")
-        .select("*")
+        .from("chat_messages").select("*")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true });
       if (data) setMessages(data);
@@ -184,76 +177,49 @@ function ChatModal({
     fetchMessages();
     const channel = supabase
       .channel(`chat:${conversationId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "chat_messages",
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) =>
-          setMessages((prev) =>
-            prev.some((m) => m.id === (payload.new as Message).id)
-              ? prev
-              : [...prev, payload.new as Message],
-          ),
-      )
-      .subscribe();
+      .on("postgres_changes", {
+        event: "INSERT", schema: "public", table: "chat_messages",
+        filter: `conversation_id=eq.${conversationId}`,
+      }, (payload) =>
+        setMessages((prev) =>
+          prev.some((m) => m.id === (payload.new as Message).id)
+            ? prev : [...prev, payload.new as Message],
+        ),
+      ).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [conversationId]);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   const handleSend = async () => {
     if (!text.trim() || sending) return;
     setSending(true);
     const trimmed = text.trim();
     setText("");
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        conversation_id: conversationId,
-        sender_id: currentUser.uid,
-        sender_name: currentUser.displayName,
-        receiver_id: otherUser.uid,
-        item_id: String(item.id),
-        item_title: item.name,
-        text: trimmed,
-        created_at: new Date().toISOString(),
-      },
-    ]);
+    setMessages((prev) => [...prev, {
+      id: Date.now(), conversation_id: conversationId,
+      sender_id: currentUser.uid, sender_name: currentUser.displayName,
+      receiver_id: otherUser.uid, item_id: String(item.id),
+      item_title: item.name, text: trimmed, created_at: new Date().toISOString(),
+    }]);
     await supabase.from("chat_messages").insert({
       conversation_id: conversationId,
-      sender_id: currentUser.uid,
-      sender_name: currentUser.displayName,
-      receiver_id: otherUser.uid,
-      receiver_name: otherUser.displayName,
-      item_id: String(item.id),
-      item_title: item.name,
-      text: trimmed,
-      read: false,
+      sender_id: currentUser.uid, sender_name: currentUser.displayName,
+      receiver_id: otherUser.uid, receiver_name: otherUser.displayName,
+      item_id: String(item.id), item_title: item.name, text: trimmed, read: false,
     });
     setSending(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
   return (
     <div className="chat-modal-overlay" onClick={onClose}>
       <div className="chat-modal" onClick={(e) => e.stopPropagation()}>
         <div className="chat-modal__header">
-          <div className="chat-modal__avatar">
-            {otherUser.displayName?.[0]?.toUpperCase() ?? "?"}
-          </div>
+          <div className="chat-modal__avatar">{otherUser.displayName?.[0]?.toUpperCase() ?? "?"}</div>
           <div className="chat-modal__header-info">
             <div className="chat-modal__name">{otherUser.displayName}</div>
             <div className="chat-modal__item">{item.name}</div>
@@ -262,17 +228,13 @@ function ChatModal({
         </div>
         <div className="chat-modal__messages">
           {messages.length === 0 && (
-            <div className="chat-modal__empty">
-              <p>Say hi about <strong>{item.name}</strong></p>
-            </div>
+            <div className="chat-modal__empty"><p>Say hi about <strong>{item.name}</strong></p></div>
           )}
           {messages.map((msg) => {
             const isOwn = msg.sender_id === currentUser.uid;
             return (
               <div key={msg.id} className={`chat-bubble-wrapper${isOwn ? " chat-bubble-wrapper--own" : ""}`}>
-                <div className={`chat-bubble${isOwn ? " chat-bubble--own" : " chat-bubble--other"}`}>
-                  {msg.text}
-                </div>
+                <div className={`chat-bubble${isOwn ? " chat-bubble--own" : " chat-bubble--other"}`}>{msg.text}</div>
                 <span className="chat-bubble__time">
                   {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                 </span>
@@ -282,21 +244,10 @@ function ChatModal({
           <div ref={bottomRef} />
         </div>
         <div className="chat-modal__input-row">
-          <textarea
-            rows={1}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
-            className="chat-modal__textarea"
-          />
-          <button
-            onClick={handleSend}
-            disabled={!text.trim() || sending}
-            className={`chat-modal__send${text.trim() ? " chat-modal__send--active" : ""}`}
-          >
-            ↑
-          </button>
+          <textarea rows={1} value={text} onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown} placeholder="Type a message..." className="chat-modal__textarea" />
+          <button onClick={handleSend} disabled={!text.trim() || sending}
+            className={`chat-modal__send${text.trim() ? " chat-modal__send--active" : ""}`}>↑</button>
         </div>
       </div>
     </div>
@@ -365,11 +316,14 @@ function AdminPanel() {
           <label className="panel-form__label">Email</label>
           <input className="panel-form__input" type="email" placeholder="jane@school.edu" required value={adminForm.email} readOnly />
           <label className="panel-form__label">School / Institution</label>
-          <input className="panel-form__input" type="text" placeholder="Lincoln High School" required value={adminForm.school} onChange={(e) => setAdminForm((p) => ({ ...p, school: e.target.value }))} />
+          <input className="panel-form__input" type="text" placeholder="Lincoln High School" required value={adminForm.school}
+            onChange={(e) => setAdminForm((p) => ({ ...p, school: e.target.value }))} />
           <label className="panel-form__label">Teacher ID / Staff Number</label>
-          <input className="panel-form__input" type="text" placeholder="T-00123" required value={adminForm.teacherId} onChange={(e) => setAdminForm((p) => ({ ...p, teacherId: e.target.value }))} />
+          <input className="panel-form__input" type="text" placeholder="T-00123" required value={adminForm.teacherId}
+            onChange={(e) => setAdminForm((p) => ({ ...p, teacherId: e.target.value }))} />
           <label className="panel-form__label">Upload ID or Badge Photo</label>
-          <input className="panel-form__file" type="file" accept="image/*" onChange={(e) => { if (e.target.files?.[0]) setAdminFile(e.target.files[0]); }} />
+          <input className="panel-form__file" type="file" accept="image/*"
+            onChange={(e) => { if (e.target.files?.[0]) setAdminFile(e.target.files[0]); }} />
           {adminFile && (
             <div className="panel-form__preview-wrap">
               <img src={URL.createObjectURL(adminFile)} alt="preview" className="panel-form__preview" />
@@ -377,7 +331,8 @@ function AdminPanel() {
             </div>
           )}
           <label className="panel-form__label">Anything else we should know?</label>
-          <textarea className="panel-form__textarea" placeholder="e.g. I run the lost & found office..." value={adminForm.extraInfo} onChange={(e) => setAdminForm((p) => ({ ...p, extraInfo: e.target.value }))} />
+          <textarea className="panel-form__textarea" placeholder="e.g. I run the lost & found office..."
+            value={adminForm.extraInfo} onChange={(e) => setAdminForm((p) => ({ ...p, extraInfo: e.target.value }))} />
           <div className="admin-form__notice">
             <span className="admin-form__notice-icon">ℹ️</span>
             Submissions are reviewed manually. You'll be notified at your email.
@@ -425,7 +380,7 @@ function AdminLoginPanel({ onUnlock }: { onUnlock: () => void }) {
         <div className="panel-success">
           <span className="panel-success__icon">✓</span>
           <p>Admin view unlocked!</p>
-          <p className="panel-success__sub">Delete buttons are now visible on all items.</p>
+          <p className="panel-success__sub">Delete buttons and ban tools are now visible.</p>
         </div>
       </div>
     );
@@ -437,7 +392,8 @@ function AdminLoginPanel({ onUnlock }: { onUnlock: () => void }) {
       <p className="admin-login__hint">Enter the password from your approval email.</p>
       <form className="panel-form" onSubmit={handleCheck}>
         <label className="panel-form__label">Admin Password</label>
-        <input className="panel-form__input" type="password" placeholder="e.g. FINDR-JANE-X4K2" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <input className="panel-form__input" type="password" placeholder="e.g. FINDR-JANE-X4K2"
+          value={password} onChange={(e) => setPassword(e.target.value)} required />
         {error && <p className="admin-login__error">{error}</p>}
         <button type="submit" className="panel-form__submit" disabled={checking}>
           {checking ? "Checking..." : "Unlock Admin View"}
@@ -448,7 +404,7 @@ function AdminLoginPanel({ onUnlock }: { onUnlock: () => void }) {
 }
 
 // ─────────────────────────────────────────────
-// Reported Items Panel (admin only)
+// Reported Items Panel
 // ─────────────────────────────────────────────
 function ReportedItemsPanel({ updateItemStatus }: { updateItemStatus: (id: number, status: string) => void }) {
   const [reports, setReports] = useState<Report[]>([]);
@@ -512,12 +468,159 @@ function ReportedItemsPanel({ updateItemStatus }: { updateItemStatus: (id: numbe
 }
 
 // ─────────────────────────────────────────────
+// Ban Management Panel
+// ─────────────────────────────────────────────
+function BanManagementPanel({ adminEmail }: { adminEmail: string }) {
+  const [email, setEmail] = useState("");
+  const [reason, setReason] = useState("");
+  const [banType, setBanType] = useState<"permanent" | "suspend">("permanent");
+  const [suspendDays, setSuspendDays] = useState("7");
+  const [bannedUsers, setBannedUsers] = useState<BannedUser[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [fetchingList, setFetchingList] = useState(true);
+  const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const fetchBannedUsers = async () => {
+    setFetchingList(true);
+    const { data } = await supabase.from("banned_users").select("*").order("banned_at", { ascending: false });
+    if (data) setBannedUsers(data);
+    setFetchingList(false);
+  };
+
+  useEffect(() => { fetchBannedUsers(); }, []);
+
+  const handleBan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !reason.trim()) return;
+    setLoading(true);
+    setSuccessMsg("");
+    setErrorMsg("");
+
+    const suspendedUntil = banType === "suspend"
+      ? new Date(Date.now() + Number(suspendDays) * 86400000).toISOString()
+      : null;
+
+    await supabase.from("banned_users").delete().eq("email", email.trim().toLowerCase());
+
+    const { error } = await supabase.from("banned_users").insert({
+      email: email.trim().toLowerCase(),
+      reason: reason.trim(),
+      suspended_until: suspendedUntil,
+      banned_by: adminEmail,
+      banned_at: new Date().toISOString(),
+    });
+
+    if (error) {
+      setErrorMsg(`Failed: ${error.message}`);
+    } else {
+      setSuccessMsg(
+        banType === "permanent"
+          ? `${email} has been permanently banned.`
+          : `${email} has been suspended for ${suspendDays} days.`
+      );
+      setEmail("");
+      setReason("");
+      fetchBannedUsers();
+    }
+    setLoading(false);
+  };
+
+  const handleUnban = async (emailToUnban: string) => {
+    if (!confirm(`Unban ${emailToUnban}?`)) return;
+    const { error } = await supabase.from("banned_users").delete().eq("email", emailToUnban);
+    if (!error) { setSuccessMsg(`${emailToUnban} has been unbanned.`); fetchBannedUsers(); }
+  };
+
+  const isActive = (u: BannedUser) => {
+    if (!u.suspended_until) return true;
+    return new Date(u.suspended_until) > new Date();
+  };
+
+  return (
+    <div className="panel-content">
+      <div className="panel-section-title">Ban Management</div>
+      <p className="admin-login__hint">Ban or suspend users by their account email.</p>
+
+      <form className="panel-form" onSubmit={handleBan}>
+        <label className="panel-form__label">User Email</label>
+        <input className="panel-form__input" type="email" placeholder="user@school.edu"
+          value={email} onChange={(e) => setEmail(e.target.value)} required />
+
+        <label className="panel-form__label">Reason</label>
+        <textarea className="panel-form__textarea" placeholder="e.g. Spam, abusive messages, false claims..."
+          value={reason} onChange={(e) => setReason(e.target.value)} required />
+
+        <label className="panel-form__label">Ban Type</label>
+        <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+          <button type="button"
+            style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "1px solid var(--border)", background: banType === "permanent" ? "var(--accent)" : "transparent", color: banType === "permanent" ? "white" : "inherit", cursor: "pointer", fontSize: "0.85rem" }}
+            onClick={() => setBanType("permanent")}>🚫 Permanent</button>
+          <button type="button"
+            style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "1px solid var(--border)", background: banType === "suspend" ? "var(--accent)" : "transparent", color: banType === "suspend" ? "white" : "inherit", cursor: "pointer", fontSize: "0.85rem" }}
+            onClick={() => setBanType("suspend")}>⏸ Suspend</button>
+        </div>
+
+        {banType === "suspend" && (
+          <>
+            <label className="panel-form__label">Suspend for how many days?</label>
+            <input className="panel-form__input" type="number" min="1" max="365"
+              value={suspendDays} onChange={(e) => setSuspendDays(e.target.value)} />
+          </>
+        )}
+
+        {successMsg && <p style={{ color: "#22c55e", fontSize: "0.85rem", margin: "4px 0" }}>✓ {successMsg}</p>}
+        {errorMsg && <p className="admin-login__error">{errorMsg}</p>}
+
+        <button type="submit" className="panel-form__submit" disabled={loading}>
+          {loading ? "Processing..." : banType === "permanent" ? "Ban User" : "Suspend User"}
+        </button>
+      </form>
+
+      <div className="panel-section-title" style={{ marginTop: "1.5rem" }}>Active Bans & Suspensions</div>
+      {fetchingList ? (
+        <p className="panel-empty">Loading...</p>
+      ) : bannedUsers.length === 0 ? (
+        <p className="panel-empty">No banned users.</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "8px" }}>
+          {bannedUsers.map((u) => (
+            <div key={u.email} style={{
+              padding: "10px 12px", borderRadius: "10px", background: "var(--card-bg)",
+              border: "1px solid var(--border)", opacity: isActive(u) ? 1 : 0.5,
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+            }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>{u.email}</span>
+                <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>{u.reason}</span>
+                <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                  {u.suspended_until
+                    ? isActive(u)
+                      ? `Suspended until ${new Date(u.suspended_until).toLocaleDateString()}`
+                      : "Suspension expired"
+                    : "Permanent ban"} · by {u.banned_by}
+                </span>
+              </div>
+              <button onClick={() => handleUnban(u.email)} style={{
+                padding: "5px 10px", borderRadius: "6px", background: "#ef4444",
+                color: "white", border: "none", cursor: "pointer", fontSize: "0.78rem",
+              }}>Unban</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // Dashboard Page
 // ─────────────────────────────────────────────
 export default function DashboardPage() {
   const { items, addItem, updateItemStatus } = useItems();
   const { user } = useUser();
   const { language } = useSettings();
+  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<TabId>("items");
   const [isReady, setIsReady] = useState(false);
@@ -525,6 +628,7 @@ export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [reportingItem, setReportingItem] = useState<any | null>(null);
 
+  const [banChecked, setBanChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("findr_is_admin") === "true";
@@ -536,12 +640,35 @@ export default function DashboardPage() {
     localStorage.setItem("findr_is_admin", String(isAdmin));
   }, [isAdmin]);
 
+  // ── Check if current user is banned ──────
+  useEffect(() => {
+    if (!user) { setBanChecked(true); return; }
+    const checkBan = async () => {
+      const { data } = await supabase
+        .from("banned_users")
+        .select("email, suspended_until")
+        .eq("email", user.primaryEmailAddress?.emailAddress)
+        .single();
+      if (data) {
+        const isPermanent = !data.suspended_until;
+        const isSuspended = data.suspended_until && new Date(data.suspended_until) > new Date();
+        if (isPermanent || isSuspended) {
+          router.push("/banned");
+          return;
+        }
+      }
+      setBanChecked(true);
+    };
+    checkBan();
+  }, [user]);
+
   const [newItemName, setNewItemName] = useState("");
   const [newItemDesc, setNewItemDesc] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
+  // ── Translations ──────────────────────────
   const [addItemText, setAddItemText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_addItem_${language}`) || "+ Add Item" : "+ Add Item");
   const [reportFoundText, setReportFoundText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_reportFound_${language}`) || "Report Found Item" : "Report Found Item");
   const [itemNameText, setItemNameText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_itemName_${language}`) || "Item Name" : "Item Name");
@@ -594,6 +721,7 @@ export default function DashboardPage() {
     translateAndCache();
   }, [language]);
 
+  // ── Filtered items ────────────────────────
   const filteredItems = searchQuery.trim()
     ? (items ?? []).filter((item) => {
         const q = searchQuery.toLowerCase();
@@ -602,11 +730,19 @@ export default function DashboardPage() {
       })
     : (items ?? []);
 
+  // ── Handlers ─────────────────────────────
   const handleRetrieve = async (item: any) => {
     if (!user) return alert(signInText);
-    const { error } = await supabase.from("items").update({ status: "pending", claimer_email: user.primaryEmailAddress?.emailAddress }).eq("id", item.id);
+    const { error } = await supabase.from("items").update({
+      status: "pending", claimer_email: user.primaryEmailAddress?.emailAddress,
+    }).eq("id", item.id);
     if (error) { console.error(error.message); return; }
-    emailjs.send(process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!, process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!, { author_name: item.authorName || "Owner", item_name: item.name, retriever_name: user.fullName || "A user", retriever_email: user.primaryEmailAddress?.emailAddress, to_email: item.authorEmail }, process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!).catch(console.error);
+    emailjs.send(
+      process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!,
+      process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!,
+      { author_name: item.authorName || "Owner", item_name: item.name, retriever_name: user.fullName || "A user", retriever_email: user.primaryEmailAddress?.emailAddress, to_email: item.authorEmail },
+      process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!,
+    ).catch(console.error);
     updateItemStatus(item.id, "pending", user.primaryEmailAddress?.emailAddress);
     alert(requestSentText);
   };
@@ -668,7 +804,13 @@ export default function DashboardPage() {
         status: "waiting", ai_keywords: aiKeywords,
       }]).select().single();
       if (insertError) { console.error("Insert error:", insertError.message); return; }
-      addItem({ id: insertedItem.id, name: insertedItem.name, description: insertedItem.description, image: insertedItem.image_url, authorName: insertedItem.author_name, authorAvatar: insertedItem.author_avatar, status: insertedItem.status, authorId: insertedItem.author_id, authorEmail: insertedItem.author_email || "", aiKeywords: insertedItem.ai_keywords || "" } as any);
+      addItem({
+        id: insertedItem.id, name: insertedItem.name, description: insertedItem.description,
+        image: insertedItem.image_url, authorName: insertedItem.author_name,
+        authorAvatar: insertedItem.author_avatar, status: insertedItem.status,
+        authorId: insertedItem.author_id, authorEmail: insertedItem.author_email || "",
+        aiKeywords: insertedItem.ai_keywords || "",
+      } as any);
       setNewItemName(""); setNewItemDesc(""); setSelectedFile(null); setUploadSuccess(true);
       setTimeout(() => { setUploadSuccess(false); setActiveTab("items"); }, 1500);
     } catch (err) {
@@ -678,6 +820,9 @@ export default function DashboardPage() {
     }
   };
 
+  // ─────────────────────────────────────────
+  // renderPanel
+  // ─────────────────────────────────────────
   const renderPanel = () => {
     switch (activeTab) {
       case "items":
@@ -688,17 +833,20 @@ export default function DashboardPage() {
               <svg className="panel-search__icon" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
               </svg>
-              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search items..." className="panel-search__input" />
+              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search items..." className="panel-search__input" />
               {searchQuery && <button className="panel-search__clear" onClick={() => setSearchQuery("")}>×</button>}
             </div>
             {searchQuery && (
               <p className="panel-search__count">
-                {filteredItems.filter((i) => i.status !== "claimed").length} result{filteredItems.filter((i) => i.status !== "claimed").length !== 1 ? "s" : ""}
+                {filteredItems.filter((i) => i.status !== "claimed").length} result
+                {filteredItems.filter((i) => i.status !== "claimed").length !== 1 ? "s" : ""}
               </p>
             )}
             <div className="panel-item-list">
               {filteredItems.filter((i) => i.status !== "claimed").map((item) => (
-                <div key={item.id} className="panel-item-chip" onClick={() => document.getElementById(`item-${item.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })}>
+                <div key={item.id} className="panel-item-chip"
+                  onClick={() => document.getElementById(`item-${item.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })}>
                   <img src={item.image} alt={item.name} className="panel-item-chip__img" />
                   <div className="panel-item-chip__info">
                     <span className="panel-item-chip__name">{item.name}</span>
@@ -706,7 +854,9 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ))}
-              {filteredItems.filter((i) => i.status !== "claimed").length === 0 && <p className="panel-empty">No items found.</p>}
+              {filteredItems.filter((i) => i.status !== "claimed").length === 0 && (
+                <p className="panel-empty">No items found.</p>
+              )}
             </div>
           </div>
         );
@@ -720,11 +870,15 @@ export default function DashboardPage() {
             ) : (
               <form className="panel-form" onSubmit={handleSubmit}>
                 <label className="panel-form__label">Item Name</label>
-                <input type="text" placeholder={itemNameText} value={newItemName} onChange={(e) => setNewItemName(e.target.value)} required className="panel-form__input" />
+                <input type="text" placeholder={itemNameText} value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)} required className="panel-form__input" />
                 <label className="panel-form__label">Description</label>
-                <textarea placeholder={descriptionText} value={newItemDesc} onChange={(e) => setNewItemDesc(e.target.value)} required className="panel-form__textarea" />
+                <textarea placeholder={descriptionText} value={newItemDesc}
+                  onChange={(e) => setNewItemDesc(e.target.value)} required className="panel-form__textarea" />
                 <label className="panel-form__label">Photo</label>
-                <input type="file" accept="image/*" onChange={(e) => { if (e.target.files?.[0]) setSelectedFile(e.target.files[0]); }} required className="panel-form__file" />
+                <input type="file" accept="image/*"
+                  onChange={(e) => { if (e.target.files?.[0]) setSelectedFile(e.target.files[0]); }}
+                  required className="panel-form__file" />
                 {selectedFile && (
                   <div className="panel-form__preview-wrap">
                     <img src={URL.createObjectURL(selectedFile)} alt="preview" className="panel-form__preview" />
@@ -732,8 +886,13 @@ export default function DashboardPage() {
                   </div>
                 )}
                 <div className="panel-form__actions">
-                  <button type="button" className="panel-form__cancel" onClick={() => { setNewItemName(""); setNewItemDesc(""); setSelectedFile(null); setActiveTab("items"); }}>{cancelText}</button>
-                  <button type="submit" className="panel-form__submit" disabled={isUploading}>{isUploading ? uploadingText : postItemText}</button>
+                  <button type="button" className="panel-form__cancel"
+                    onClick={() => { setNewItemName(""); setNewItemDesc(""); setSelectedFile(null); setActiveTab("items"); }}>
+                    {cancelText}
+                  </button>
+                  <button type="submit" className="panel-form__submit" disabled={isUploading}>
+                    {isUploading ? uploadingText : postItemText}
+                  </button>
                 </div>
               </form>
             )}
@@ -749,46 +908,51 @@ export default function DashboardPage() {
       case "reported-items":
         return isAdmin ? <ReportedItemsPanel updateItemStatus={updateItemStatus} /> : null;
 
+      case "ban-management":
+        return isAdmin
+          ? <BanManagementPanel adminEmail={user?.primaryEmailAddress?.emailAddress ?? ""} />
+          : null;
+
       default:
         return null;
     }
   };
 
-  if (!isReady)
-    return (
-      <div className="dashboard-layout">
-        <div className="dashboard-sidebar" />
-        <div className="dashboard-main" />
-      </div>
-    );
+if (!banChecked) return null;
+  if (!isReady) return (    <div className="dashboard-layout">
+      <div className="dashboard-sidebar" />
+      <div className="dashboard-main" />
+    </div>
+  );
 
   return (
     <div className="dashboard-layout">
+      {/* ── Left Sidebar ── */}
       <aside className="dashboard-sidebar">
         <div className="sidebar-tabs">
           {SIDEBAR_TABS.filter((tab) => !tab.adminOnly || isAdmin).map((tab) => (
-            <button
-              key={tab.id}
+            <button key={tab.id}
               className={`sidebar-tab${activeTab === tab.id ? " sidebar-tab--active" : ""}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
+              onClick={() => setActiveTab(tab.id)}>
               <span className="sidebar-tab__icon">{tab.icon}</span>
               <span className="sidebar-tab__label">{tab.label}</span>
               {activeTab === tab.id && <span className="sidebar-tab__pip" />}
             </button>
           ))}
         </div>
-        <div className="sidebar-panel" key={activeTab}>
-          {renderPanel()}
-        </div>
+        <div className="sidebar-panel" key={activeTab}>{renderPanel()}</div>
       </aside>
 
+      {/* ── Main content ── */}
       <main className="dashboard-main">
         {isAdmin && (
           <div className="admin-banner">
-            <span className="admin-banner__icon"></span>
-            <span>Admin mode active — you can delete any item</span>
-            <button className="admin-banner__exit" onClick={() => { setIsAdmin(false); localStorage.removeItem("findr_is_admin"); }}>Exit Admin</button>
+            <span className="admin-banner__icon">🔐</span>
+            <span>Admin mode active — you can delete items and ban users</span>
+            <button className="admin-banner__exit"
+              onClick={() => { setIsAdmin(false); localStorage.removeItem("findr_is_admin"); }}>
+              Exit Admin
+            </button>
           </div>
         )}
 
@@ -817,11 +981,13 @@ export default function DashboardPage() {
                   {currentStatus === "waiting" && !isItemOwner && (
                     <button className="retrieve-button" onClick={() => handleRetrieve(item)}>{retrieveText}</button>
                   )}
-                  {currentStatus === "pending" && (isItemOwner ? (
-                    <button className="confirm-button" onClick={() => handleConfirmClaimed(item.id)}>{confirmText}</button>
-                  ) : (
-                    <button className="pending-button" disabled>{pendingText}</button>
-                  ))}
+                  {currentStatus === "pending" && (
+                    isItemOwner ? (
+                      <button className="confirm-button" onClick={() => handleConfirmClaimed(item.id)}>{confirmText}</button>
+                    ) : (
+                      <button className="pending-button" disabled>{pendingText}</button>
+                    )
+                  )}
                   {!isItemOwner && (
                     <button className="message-finder-button" onClick={() => handleOpenChat(item)}>Message Finder</button>
                   )}
