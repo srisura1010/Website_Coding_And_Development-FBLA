@@ -1094,7 +1094,7 @@ export default function DashboardPage() {
         ) : (
           <>
             <div className="panel-search" style={{ margin: "16px 20px 0" }}>
-              <span className="panel-search__icon">🔍</span>
+              <span className="panel-search__icon"></span>
               <input
                 className="panel-search__input"
                 placeholder="Search items..."
