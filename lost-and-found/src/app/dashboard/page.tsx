@@ -62,7 +62,7 @@ interface BannedUser {
   banned_by: string;
 }
 
-type TabId = "items" | "add-item" | "become-admin" | "admin-login" | "reported-items" | "ban-management";
+type TabId = "items" | "add-item" | "report-lost" | "become-admin" | "admin-login" | "reported-items" | "ban-management";
 
 const REPORT_REASONS = [
   "Inappropriate content",
@@ -73,12 +73,13 @@ const REPORT_REASONS = [
 ];
 
 const SIDEBAR_TABS: { id: TabId; label: string; icon: React.ReactNode; adminOnly?: boolean }[] = [
-  { id: "items",          label: "Items",           icon: "" },
-  { id: "add-item",       label: "Add Item",         icon: "" },
+  { id: "items",          label: "Items",            icon: "" },
+  { id: "add-item",       label: "Add Found Item",   icon: "" },
+  { id: "report-lost",    label: "Report Lost Item", icon: "" },
   { id: "become-admin",   label: "Become an Admin",  icon: "" },
   { id: "admin-login",    label: "Admin",            icon: "" },
   { id: "reported-items", label: "Reported Items",   icon: "🚩", adminOnly: true },
-  { id: "ban-management", label: "Ban Management",   icon: "🔨", adminOnly: true },
+  { id: "ban-management", label: "Ban Management",   icon: "", adminOnly: true },
 ];
 
 // ─────────────────────────────────────────────
@@ -102,7 +103,7 @@ function ReportModal({
     await supabase.from("reports").insert({
       item_id: item.id,
       item_name: item.name,
-      item_image: item.image,
+      item_image: item.image || null,
       reporter_id: currentUser.uid,
       reporter_name: currentUser.displayName,
       reporter_email: currentUser.email,
@@ -496,13 +497,10 @@ function BanManagementPanel({ adminEmail }: { adminEmail: string }) {
     setLoading(true);
     setSuccessMsg("");
     setErrorMsg("");
-
     const suspendedUntil = banType === "suspend"
       ? new Date(Date.now() + Number(suspendDays) * 86400000).toISOString()
       : null;
-
     await supabase.from("banned_users").delete().eq("email", email.trim().toLowerCase());
-
     const { error } = await supabase.from("banned_users").insert({
       email: email.trim().toLowerCase(),
       reason: reason.trim(),
@@ -510,15 +508,10 @@ function BanManagementPanel({ adminEmail }: { adminEmail: string }) {
       banned_by: adminEmail,
       banned_at: new Date().toISOString(),
     });
-
     if (error) {
       setErrorMsg(`Failed: ${error.message}`);
     } else {
-      setSuccessMsg(
-        banType === "permanent"
-          ? `${email} has been permanently banned.`
-          : `${email} has been suspended for ${suspendDays} days.`
-      );
+      setSuccessMsg(banType === "permanent" ? `${email} has been permanently banned.` : `${email} has been suspended for ${suspendDays} days.`);
       setEmail("");
       setReason("");
       fetchBannedUsers();
@@ -541,16 +534,13 @@ function BanManagementPanel({ adminEmail }: { adminEmail: string }) {
     <div className="panel-content">
       <div className="panel-section-title">Ban Management</div>
       <p className="admin-login__hint">Ban or suspend users by their account email.</p>
-
       <form className="panel-form" onSubmit={handleBan}>
         <label className="panel-form__label">User Email</label>
         <input className="panel-form__input" type="email" placeholder="user@school.edu"
           value={email} onChange={(e) => setEmail(e.target.value)} required />
-
         <label className="panel-form__label">Reason</label>
         <textarea className="panel-form__textarea" placeholder="e.g. Spam, abusive messages, false claims..."
           value={reason} onChange={(e) => setReason(e.target.value)} required />
-
         <label className="panel-form__label">Ban Type</label>
         <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
           <button type="button"
@@ -560,7 +550,6 @@ function BanManagementPanel({ adminEmail }: { adminEmail: string }) {
             style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "1px solid var(--border)", background: banType === "suspend" ? "var(--accent)" : "transparent", color: banType === "suspend" ? "white" : "inherit", cursor: "pointer", fontSize: "0.85rem" }}
             onClick={() => setBanType("suspend")}>⏸ Suspend</button>
         </div>
-
         {banType === "suspend" && (
           <>
             <label className="panel-form__label">Suspend for how many days?</label>
@@ -568,15 +557,12 @@ function BanManagementPanel({ adminEmail }: { adminEmail: string }) {
               value={suspendDays} onChange={(e) => setSuspendDays(e.target.value)} />
           </>
         )}
-
         {successMsg && <p style={{ color: "#22c55e", fontSize: "0.85rem", margin: "4px 0" }}>✓ {successMsg}</p>}
         {errorMsg && <p className="admin-login__error">{errorMsg}</p>}
-
         <button type="submit" className="panel-form__submit" disabled={loading}>
           {loading ? "Processing..." : banType === "permanent" ? "Ban User" : "Suspend User"}
         </button>
       </form>
-
       <div className="panel-section-title" style={{ marginTop: "1.5rem" }}>Active Bans & Suspensions</div>
       {fetchingList ? (
         <p className="panel-empty">Loading...</p>
@@ -594,11 +580,7 @@ function BanManagementPanel({ adminEmail }: { adminEmail: string }) {
                 <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>{u.email}</span>
                 <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>{u.reason}</span>
                 <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
-                  {u.suspended_until
-                    ? isActive(u)
-                      ? `Suspended until ${new Date(u.suspended_until).toLocaleDateString()}`
-                      : "Suspension expired"
-                    : "Permanent ban"} · by {u.banned_by}
+                  {u.suspended_until ? isActive(u) ? `Suspended until ${new Date(u.suspended_until).toLocaleDateString()}` : "Suspension expired" : "Permanent ban"} · by {u.banned_by}
                 </span>
               </div>
               <button onClick={() => handleUnban(u.email)} style={{
@@ -617,7 +599,7 @@ function BanManagementPanel({ adminEmail }: { adminEmail: string }) {
 // Dashboard Page
 // ─────────────────────────────────────────────
 export default function DashboardPage() {
-  const { items, addItem, updateItemStatus } = useItems();
+  const { items, lostItems, addItem, addLostItem, updateItemStatus, removeLostItem } = useItems();
   const { user } = useUser();
   const { language } = useSettings();
   const router = useRouter();
@@ -627,48 +609,47 @@ export default function DashboardPage() {
   const [activeChat, setActiveChat] = useState<ActiveChat | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [reportingItem, setReportingItem] = useState<any | null>(null);
+  const [boardTab, setBoardTab] = useState<"found" | "lost">("found");
 
   const [banChecked, setBanChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("findr_is_admin") === "true";
-    }
+    if (typeof window !== "undefined") return localStorage.getItem("findr_is_admin") === "true";
     return false;
   });
 
-  useEffect(() => {
-    localStorage.setItem("findr_is_admin", String(isAdmin));
-  }, [isAdmin]);
+  useEffect(() => { localStorage.setItem("findr_is_admin", String(isAdmin)); }, [isAdmin]);
 
-  // ── Check if current user is banned ──────
   useEffect(() => {
     if (!user) { setBanChecked(true); return; }
     const checkBan = async () => {
       const { data } = await supabase
-        .from("banned_users")
-        .select("email, suspended_until")
-        .eq("email", user.primaryEmailAddress?.emailAddress)
-        .single();
+        .from("banned_users").select("email, suspended_until")
+        .eq("email", user.primaryEmailAddress?.emailAddress).single();
       if (data) {
         const isPermanent = !data.suspended_until;
         const isSuspended = data.suspended_until && new Date(data.suspended_until) > new Date();
-        if (isPermanent || isSuspended) {
-          router.push("/banned");
-          return;
-        }
+        if (isPermanent || isSuspended) { router.push("/banned"); return; }
       }
       setBanChecked(true);
     };
     checkBan();
   }, [user]);
 
+  // ── Lost item form state ──
+  const [lostItemName, setLostItemName] = useState("");
+  const [lostItemDesc, setLostItemDesc] = useState("");
+  const [lostItemUploading, setLostItemUploading] = useState(false);
+  const [lostItemSuccess, setLostItemSuccess] = useState(false);
+  const [lostSelectedFile, setLostSelectedFile] = useState<File | null>(null);
+
+  // ── Found item form state ──
   const [newItemName, setNewItemName] = useState("");
   const [newItemDesc, setNewItemDesc] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  // ── Translations ──────────────────────────
+  // ── Translations ──
   const [addItemText, setAddItemText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_addItem_${language}`) || "+ Add Item" : "+ Add Item");
   const [reportFoundText, setReportFoundText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_reportFound_${language}`) || "Report Found Item" : "Report Found Item");
   const [itemNameText, setItemNameText] = useState(() => typeof window !== "undefined" ? localStorage.getItem(`nav_itemName_${language}`) || "Item Name" : "Item Name");
@@ -721,7 +702,6 @@ export default function DashboardPage() {
     translateAndCache();
   }, [language]);
 
-  // ── Filtered items ────────────────────────
   const filteredItems = searchQuery.trim()
     ? (items ?? []).filter((item) => {
         const q = searchQuery.toLowerCase();
@@ -730,7 +710,14 @@ export default function DashboardPage() {
       })
     : (items ?? []);
 
-  // ── Handlers ─────────────────────────────
+  const filteredLostItems = searchQuery.trim()
+    ? (lostItems ?? []).filter((item) => {
+        const q = searchQuery.toLowerCase();
+        const haystack = `${item.name} ${item.description}`.toLowerCase();
+        return haystack.includes(q) || q.split(/\s+/).some((word) => haystack.includes(word));
+      })
+    : (lostItems ?? []);
+
   const handleRetrieve = async (item: any) => {
     if (!user) return alert(signInText);
     const { error } = await supabase.from("items").update({
@@ -758,15 +745,30 @@ export default function DashboardPage() {
     if (!error) updateItemStatus(itemId, "claimed");
   };
 
-  const handleOpenChat = (item: any) => {
+  const handleDeleteLostItem = async (itemId: number) => {
+    if (!confirm("Delete this lost item report permanently?")) return;
+    const { error } = await supabase.from("lost_items").delete().eq("id", itemId);
+    if (!error) removeLostItem(itemId);
+  };
+
+  const handleOpenChat = (item: any, isLost = false) => {
     if (!user) return alert(signInText);
     if (user.id === item.authorId) return;
     const conversationId = getConversationId(
-      { id: String(item.id), title: item.name },
+      { id: String(item.id) + (isLost ? "_lost" : ""), title: item.name },
       { uid: user.id, displayName: user.fullName || "Me" },
-      { uid: item.authorId, displayName: item.authorName || "Finder" },
+      { uid: item.authorId, displayName: item.authorName || (isLost ? "Owner" : "Finder") },
     );
-    setActiveChat({ conversationId, item, otherUser: { uid: item.authorId, displayName: item.authorName || "Finder" } });
+    setActiveChat({
+      conversationId,
+      item,
+      otherUser: { uid: item.authorId, displayName: item.authorName || (isLost ? "Owner" : "Finder") },
+    });
+  };
+
+  const handleMarkFound = async (itemId: number) => {
+    const { error } = await supabase.from("lost_items").update({ status: "found" }).eq("id", itemId);
+    if (!error) removeLostItem(itemId);
   };
 
   const extractKeywords = async (file: File): Promise<string> => {
@@ -820,6 +822,53 @@ export default function DashboardPage() {
     }
   };
 
+  const handleLostSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!lostItemName || !lostItemDesc || !user) return;
+    setLostItemUploading(true);
+    try {
+      let imageUrl = "";
+      if (lostSelectedFile) {
+        const fileName = `lost_${Date.now()}_${lostSelectedFile.name}`;
+        const { error: uploadError } = await supabase.storage.from("item-images").upload(fileName, lostSelectedFile);
+        if (uploadError) { console.error("Upload error:", uploadError.message); }
+        else {
+          const { data: urlData } = supabase.storage.from("item-images").getPublicUrl(fileName);
+          imageUrl = urlData.publicUrl;
+        }
+      }
+      const { data: insertedItem, error: insertError } = await supabase.from("lost_items").insert([{
+        name: lostItemName,
+        description: lostItemDesc,
+        image_url: imageUrl || null,
+        author_name: user.fullName || user.username || "Anonymous",
+        author_avatar: user.imageUrl,
+        author_id: user.id,
+        author_email: user.primaryEmailAddress?.emailAddress,
+        status: "looking",
+      }]).select().single();
+      if (insertError) { console.error("Insert error:", insertError.message); return; }
+      addLostItem({
+        id: insertedItem.id,
+        name: insertedItem.name,
+        description: insertedItem.description,
+        image: insertedItem.image_url || "",
+        authorName: insertedItem.author_name,
+        authorAvatar: insertedItem.author_avatar,
+        authorId: insertedItem.author_id,
+        authorEmail: insertedItem.author_email || "",
+        status: insertedItem.status,
+        created_at: insertedItem.created_at,
+      });
+      setLostItemName(""); setLostItemDesc(""); setLostSelectedFile(null); setLostItemSuccess(true);
+      setTimeout(() => { setLostItemSuccess(false); setActiveTab("items"); setBoardTab("lost"); }, 1500);
+    } catch (err) {
+      console.error("Unexpected error:", err);
+    } finally {
+      setLostItemUploading(false);
+    }
+  };
+
   // ─────────────────────────────────────────
   // renderPanel
   // ─────────────────────────────────────────
@@ -837,12 +886,6 @@ export default function DashboardPage() {
                 placeholder="Search items..." className="panel-search__input" />
               {searchQuery && <button className="panel-search__clear" onClick={() => setSearchQuery("")}>×</button>}
             </div>
-            {searchQuery && (
-              <p className="panel-search__count">
-                {filteredItems.filter((i) => i.status !== "claimed").length} result
-                {filteredItems.filter((i) => i.status !== "claimed").length !== 1 ? "s" : ""}
-              </p>
-            )}
             <div className="panel-item-list">
               {filteredItems.filter((i) => i.status !== "claimed").map((item) => (
                 <div key={item.id} className="panel-item-chip"
@@ -854,7 +897,28 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ))}
-              {filteredItems.filter((i) => i.status !== "claimed").length === 0 && (
+              {/* Lost items in sidebar */}
+              {filteredLostItems.map((item) => (
+                <div key={`lost-${item.id}`} className="panel-item-chip"
+                  onClick={() => {
+                    setBoardTab("lost");
+                    setTimeout(() => {
+                      document.getElementById(`lost-item-${item.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }, 100);
+                  }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 8, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", flexShrink: 0 }}>
+                    {item.image
+                      ? <img src={item.image} alt={item.name} className="panel-item-chip__img" />
+                      : "🔎"}
+                  </div>
+                  <div className="panel-item-chip__info">
+                    <span className="panel-item-chip__name">{item.name}</span>
+                    <span className="panel-item-chip__status" style={{ color: "#f97316" }}>lost</span>
+                  </div>
+                </div>
+              ))}
+
+              {filteredItems.filter((i) => i.status !== "claimed").length === 0 && filteredLostItems.length === 0 && (
                 <p className="panel-empty">No items found.</p>
               )}
             </div>
@@ -899,6 +963,46 @@ export default function DashboardPage() {
           </div>
         );
 
+      case "report-lost":
+        return (
+          <div className="panel-content">
+            <div className="panel-section-title">Report Lost Item</div>
+            {lostItemSuccess ? (
+              <div className="panel-success"><span className="panel-success__icon">✓</span><p>Lost item reported!</p></div>
+            ) : (
+              <form className="panel-form" onSubmit={handleLostSubmit}>
+                <label className="panel-form__label">What did you lose?</label>
+                <input type="text" placeholder="e.g. Black North Face backpack" value={lostItemName}
+                  onChange={(e) => setLostItemName(e.target.value)} required className="panel-form__input" />
+                <label className="panel-form__label">Description</label>
+                <textarea placeholder="Where did you lose it? Any identifying features?" value={lostItemDesc}
+                  onChange={(e) => setLostItemDesc(e.target.value)} required className="panel-form__textarea" />
+                <label className="panel-form__label">
+                  Photo <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 400 }}>(optional)</span>
+                </label>
+                <input type="file" accept="image/*"
+                  onChange={(e) => { if (e.target.files?.[0]) setLostSelectedFile(e.target.files[0]); }}
+                  className="panel-form__file" />
+                {lostSelectedFile && (
+                  <div className="panel-form__preview-wrap">
+                    <img src={URL.createObjectURL(lostSelectedFile)} alt="preview" className="panel-form__preview" />
+                    <button type="button" className="panel-form__preview-remove" onClick={() => setLostSelectedFile(null)}>×</button>
+                  </div>
+                )}
+                <div className="panel-form__actions">
+                  <button type="button" className="panel-form__cancel"
+                    onClick={() => { setLostItemName(""); setLostItemDesc(""); setLostSelectedFile(null); setActiveTab("items"); }}>
+                    {cancelText}
+                  </button>
+                  <button type="submit" className="panel-form__submit" disabled={lostItemUploading}>
+                    {lostItemUploading ? "Posting..." : "Post Lost Item"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        );
+
       case "become-admin":
         return <AdminPanel />;
 
@@ -909,17 +1013,16 @@ export default function DashboardPage() {
         return isAdmin ? <ReportedItemsPanel updateItemStatus={updateItemStatus} /> : null;
 
       case "ban-management":
-        return isAdmin
-          ? <BanManagementPanel adminEmail={user?.primaryEmailAddress?.emailAddress ?? ""} />
-          : null;
+        return isAdmin ? <BanManagementPanel adminEmail={user?.primaryEmailAddress?.emailAddress ?? ""} /> : null;
 
       default:
         return null;
     }
   };
 
-if (!banChecked) return null;
-  if (!isReady) return (    <div className="dashboard-layout">
+  if (!banChecked) return null;
+  if (!isReady) return (
+    <div className="dashboard-layout">
       <div className="dashboard-sidebar" />
       <div className="dashboard-main" />
     </div>
@@ -927,7 +1030,6 @@ if (!banChecked) return null;
 
   return (
     <div className="dashboard-layout">
-      {/* ── Left Sidebar ── */}
       <aside className="dashboard-sidebar">
         <div className="sidebar-tabs">
           {SIDEBAR_TABS.filter((tab) => !tab.adminOnly || isAdmin).map((tab) => (
@@ -943,7 +1045,6 @@ if (!banChecked) return null;
         <div className="sidebar-panel" key={activeTab}>{renderPanel()}</div>
       </aside>
 
-      {/* ── Main content ── */}
       <main className="dashboard-main">
         {isAdmin && (
           <div className="admin-banner">
@@ -956,55 +1057,145 @@ if (!banChecked) return null;
           </div>
         )}
 
-        <div className="items-container">
-          {filteredItems.filter((i) => i.status !== "claimed").map((item) => {
-            const currentStatus = item.status || "waiting";
-            const isItemOwner = user?.id === item.authorId;
-            return (
-              <div key={item.id} id={`item-${item.id}`} className={`item-card${isAdmin ? " item-card--admin" : ""}`}>
-                <button className="report-flag" onClick={() => setReportingItem(item)}>
-                  <FaFlag />
-                  <span className="report-flag__tooltip">Report</span>
-                </button>
-                <div className="item-image-wrapper">
-                  <img className="item-image" src={item.image} alt={item.name} />
-                </div>
-                <div className="item-info">
-                  <h3>{item.name}</h3>
-                  <div className="posted-by">
-                    {item.authorAvatar && <img src={item.authorAvatar} alt="User" className="posted-by__avatar" />}
-                    <span>{foundByText} {item.authorName || "Anonymous"}</span>
-                  </div>
-                  <p>{item.description}</p>
-                </div>
-                <div className="button-group">
-                  {currentStatus === "waiting" && !isItemOwner && (
-                    <button className="retrieve-button" onClick={() => handleRetrieve(item)}>{retrieveText}</button>
-                  )}
-                  {currentStatus === "pending" && (
-                    isItemOwner ? (
-                      <button className="confirm-button" onClick={() => handleConfirmClaimed(item.id)}>{confirmText}</button>
-                    ) : (
-                      <button className="pending-button" disabled>{pendingText}</button>
-                    )
-                  )}
-                  {!isItemOwner && (
-                    <button className="message-finder-button" onClick={() => handleOpenChat(item)}>Message Finder</button>
-                  )}
-                  {isAdmin && (
-                    <button className="delete-button" onClick={() => handleDelete(item.id)}>Delete Item</button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          {filteredItems.filter((i) => i.status !== "claimed").length === 0 && searchQuery && (
-            <div className="empty-state">
-              <p>No items found for "{searchQuery}"</p>
-              <p>Try different keywords like color, type, or brand</p>
-            </div>
-          )}
+        {/* ── Board tabs ── */}
+        <div style={{ display: "flex", gap: "8px", padding: "16px 20px 0", borderBottom: "1px solid var(--border)" }}>
+          <button
+            onClick={() => setBoardTab("found")}
+            style={{
+              padding: "8px 20px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer",
+              fontWeight: 600, fontSize: "0.9rem",
+              background: boardTab === "found" ? "#f97316" : "var(--bg)",
+              color: boardTab === "found" ? "black" : "var(--text-muted)",
+            }}>
+             Found Items ({filteredItems.filter((inp) => inp.status !== "claimed").length})
+          </button>
+          <button
+            onClick={() => setBoardTab("lost")}
+            style={{
+              padding: "8px 20px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer",
+              fontWeight: 600, fontSize: "0.9rem",
+              background: boardTab === "lost" ? "#f97316" : "var(--bg)",
+              color: boardTab === "lost" ? "white" : "var(--text-muted)",
+            }}>
+             Lost Items ({filteredLostItems.length})
+          </button>
         </div>
+
+        {/* ── Found Items Board ── */}
+        {boardTab === "found" && (
+          <div className="items-container">
+            {filteredItems.filter((i) => i.status !== "claimed").map((item) => {
+              const currentStatus = item.status || "waiting";
+              const isItemOwner = user?.id === item.authorId;
+              return (
+                <div key={item.id} id={`item-${item.id}`} className={`item-card${isAdmin ? " item-card--admin" : ""}`}>
+                  <button className="report-flag" onClick={() => setReportingItem(item)}>
+                    <FaFlag />
+                    <span className="report-flag__tooltip">Report</span>
+                  </button>
+                  <div className="item-image-wrapper">
+                    <img className="item-image" src={item.image} alt={item.name} />
+                  </div>
+                  <div className="item-info">
+                    <h3>{item.name}</h3>
+                    <div className="posted-by">
+                      {item.authorAvatar && <img src={item.authorAvatar} alt="User" className="posted-by__avatar" />}
+                      <span>{foundByText} {item.authorName || "Anonymous"}</span>
+                    </div>
+                    <p>{item.description}</p>
+                  </div>
+                  <div className="button-group">
+                    {currentStatus === "waiting" && !isItemOwner && (
+                      <button className="retrieve-button" onClick={() => handleRetrieve(item)}>{retrieveText}</button>
+                    )}
+                    {currentStatus === "pending" && (
+                      isItemOwner ? (
+                        <button className="confirm-button" onClick={() => handleConfirmClaimed(item.id)}>{confirmText}</button>
+                      ) : (
+                        <button className="pending-button" disabled>{pendingText}</button>
+                      )
+                    )}
+                    {!isItemOwner && (
+                      <button className="message-finder-button" onClick={() => handleOpenChat(item)}>Message Finder</button>
+                    )}
+                    {isAdmin && (
+                      <button className="delete-button" onClick={() => handleDelete(item.id)}>Delete Item</button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            {filteredItems.filter((i) => i.status !== "claimed").length === 0 && (
+              <div className="empty-state">
+                <p>{searchQuery ? `No items found for "${searchQuery}"` : "No found items posted yet."}</p>
+                {searchQuery && <p>Try different keywords like color, type, or brand</p>}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Lost Items Board ── */}
+        {boardTab === "lost" && (
+          <div className="items-container">
+            {filteredLostItems.map((item) => {
+              const isItemOwner = user?.id === item.authorId;
+              return (
+                <div key={item.id} id={`lost-item-${item.id}`} className={`item-card${isAdmin ? " item-card--admin" : ""}`}>
+                  <button className="report-flag" onClick={() => setReportingItem({ ...item, image: item.image || "" })}>
+                    <FaFlag />
+                    <span className="report-flag__tooltip">Report</span>
+                  </button>
+                  <div className="item-image-wrapper">
+                    {item.image ? (
+                      <img className="item-image" src={item.image} alt={item.name} />
+                    ) : (
+                      <div style={{
+                        width: "100%", height: "100%",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        background: "#f1f5f9", color: "#94a3b8", fontSize: "2.5rem",
+                      }}>🔎</div>
+                    )}
+                  </div>
+                  <div className="item-info">
+                    <h3>{item.name}</h3>
+                    <div className="posted-by">
+                      {item.authorAvatar && <img src={item.authorAvatar} alt="User" className="posted-by__avatar" />}
+                      <span>Lost by: {item.authorName || "Anonymous"}</span>
+                    </div>
+                    <p>{item.description}</p>
+                  </div>
+                  <div className="button-group">
+                    {!isItemOwner && (
+                      <button className="retrieve-button" style={{ background: "#f97316" }}
+                        onClick={() => handleOpenChat(item, true)}>
+                        I Found This!
+                      </button>
+                    )}
+                    {isItemOwner && (
+                      <button className="confirm-button" onClick={() => handleMarkFound(item.id)}>
+                        Mark as Found
+                      </button>
+                    )}
+                    {!isItemOwner && (
+                      <button className="message-finder-button" onClick={() => handleOpenChat(item, true)}>
+                        Message Owner
+                      </button>
+                    )}
+                    {isAdmin && (
+                      <button className="delete-button" onClick={() => handleDeleteLostItem(item.id)}>Delete</button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            {filteredLostItems.length === 0 && (
+              <div className="empty-state">
+                <p>{searchQuery ? `No lost items found for "${searchQuery}"` : "No lost item reports yet."}</p>
+                <p>Click "Report Lost Item" in the sidebar to post what you lost.</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {reportingItem && user && (
           <ReportModal

@@ -18,6 +18,19 @@ export interface Item {
   aiKeywords?: string;
 }
 
+export interface LostItem {
+  id: number;
+  name: string;
+  description: string;
+  image: string;
+  authorName: string;
+  authorAvatar?: string;
+  authorId: string;
+  authorEmail: string;
+  status: string;
+  created_at: string;
+}
+
 interface RawItem extends Omit<Item, "name" | "description"> {
   name: string;
   description: string;
@@ -25,8 +38,11 @@ interface RawItem extends Omit<Item, "name" | "description"> {
 
 interface ItemsContextType {
   items: Item[];
+  lostItems: LostItem[];
   addItem: (item: Item) => void;
+  addLostItem: (item: LostItem) => void;
   updateItemStatus: (id: number, newStatus: string, claimerEmail?: string) => void;
+  removeLostItem: (id: number) => void;
 }
 
 const ItemsContext = createContext<ItemsContextType | undefined>(undefined);
@@ -35,7 +51,6 @@ async function translateText(text: string, target: string): Promise<string> {
   const cacheKey = `item_text_${target}_${btoa(encodeURIComponent(text)).slice(0, 40)}`;
   const cached = localStorage.getItem(cacheKey);
   if (cached) return cached;
-
   try {
     const res = await fetch("/api/translate", {
       method: "POST",
@@ -49,14 +64,13 @@ async function translateText(text: string, target: string): Promise<string> {
       return translated;
     }
   } catch {
-    // fall through to return original
+    // fall through
   }
   return text;
 }
 
 async function translateItems(rawItems: RawItem[], language: string): Promise<Item[]> {
   if (language === "en") return rawItems;
-
   return Promise.all(
     rawItems.map(async (item) => {
       const [name, description] = await Promise.all([
@@ -71,18 +85,16 @@ async function translateItems(rawItems: RawItem[], language: string): Promise<It
 export const ItemsProvider = ({ children }: { children: ReactNode }) => {
   const [rawItems, setRawItems] = useState<RawItem[]>([]);
   const [items, setItems] = useState<Item[]>([]);
+  const [lostItems, setLostItems] = useState<LostItem[]>([]);
   const { language } = useSettings();
 
-  // Fetch raw items from Supabase once
   useEffect(() => {
     const fetchItems = async () => {
       const { data, error } = await supabase
         .from("items")
         .select("*")
         .order("id", { ascending: false });
-
       if (error) { console.error("Failed to fetch items:", error.message); return; }
-
       const formatted: RawItem[] = data.map((item) => ({
         id: item.id,
         name: item.name,
@@ -96,27 +108,54 @@ export const ItemsProvider = ({ children }: { children: ReactNode }) => {
         claimerEmail: item.claimer_email,
         aiKeywords: item.ai_keywords || "",
       }));
-
       setRawItems(formatted);
     };
-
     fetchItems();
   }, []);
 
-  // Re-translate whenever rawItems or language changes
+  useEffect(() => {
+    const fetchLostItems = async () => {
+      const { data, error } = await supabase
+        .from("lost_items")
+        .select("*")
+        .eq("status", "looking")
+        .order("id", { ascending: false });
+      if (error) { console.error("Failed to fetch lost items:", error.message); return; }
+      const formatted: LostItem[] = data.map((item) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        image: item.image_url || "",
+        authorName: item.author_name,
+        authorAvatar: item.author_avatar,
+        authorId: item.author_id,
+        authorEmail: item.author_email,
+        status: item.status,
+        created_at: item.created_at,
+      }));
+      setLostItems(formatted);
+    };
+    fetchLostItems();
+  }, []);
+
   useEffect(() => {
     if (rawItems.length === 0) return;
-
     translateItems(rawItems, language).then(setItems);
   }, [rawItems, language]);
 
   const addItem = (item: Item) => {
-    // Add to raw items so it gets translated too
     setRawItems((prev) => [item, ...prev]);
   };
 
+  const addLostItem = (item: LostItem) => {
+    setLostItems((prev) => [item, ...prev]);
+  };
+
+  const removeLostItem = (id: number) => {
+    setLostItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
   const updateItemStatus = (id: number, newStatus: string, claimerEmail?: string) => {
-    // Update both raw and translated in sync
     setRawItems((prev) =>
       prev.map((item) =>
         item.id === id
@@ -134,7 +173,7 @@ export const ItemsProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <ItemsContext.Provider value={{ items, addItem, updateItemStatus }}>
+    <ItemsContext.Provider value={{ items, lostItems, addItem, addLostItem, updateItemStatus, removeLostItem }}>
       {children}
     </ItemsContext.Provider>
   );
