@@ -8,8 +8,9 @@ import emailjs from "@emailjs/browser";
 import { useSettings } from "@/context/SettingsContext";
 import { useEffect, useState, useRef } from "react";
 import { getConversationId } from "@/app/components/MessagingSystem";
-import { FaFlag } from "react-icons/fa6";
+import { FaFlag, FaShieldHalved } from "react-icons/fa6";
 import { useRouter } from "next/navigation";
+import { AdminInboxPanel } from "@/app/components/AdminInboxPanel";
 
 interface Message {
   id: number;
@@ -69,7 +70,7 @@ interface BannedUser {
   banned_by: string;
 }
 
-type TabId = "items" | "add-item" | "report-lost" | "become-admin" | "admin-login" | "reports" | "ban-management";
+type TabId = "items" | "add-item" | "report-lost" | "become-admin" | "admin-login" | "reports" | "ban-management" | "inbox";
 
 const REPORT_REASONS = [
   "Inappropriate content",
@@ -80,13 +81,14 @@ const REPORT_REASONS = [
 ];
 
 const SIDEBAR_TABS: { id: TabId; label: string; icon: React.ReactNode; adminOnly?: boolean }[] = [
-  { id: "items",          label: "Items",            icon: "" },
-  { id: "add-item",       label: "Report Found Item", icon: "" },
-  { id: "report-lost",    label: "Report Lost Item",  icon: "" },
-  { id: "become-admin",   label: "Become an Admin",   icon: "" },
-  { id: "admin-login",    label: "Admin",             icon: "" },
-  { id: "reports",        label: "Reports",           icon: "🚩", adminOnly: true },
-  { id: "ban-management", label: "Ban Management",    icon: "", adminOnly: true },
+  { id: "items",          label: "Items",             icon: "" },
+  { id: "add-item",       label: "Report Found Item",  icon: "" },
+  { id: "report-lost",    label: "Report Lost Item",   icon: "" },
+  { id: "become-admin",   label: "Become an Admin",    icon: "" },
+  { id: "admin-login",    label: "Admin",              icon: "" },
+  { id: "reports",        label: "Reports",            icon: "🚩", adminOnly: true },
+  { id: "ban-management", label: "Ban Management",     icon: "",   adminOnly: true },
+  { id: "inbox",          label: "Inbox",              icon: "📨", adminOnly: true },
 ];
 
 function ReportModal({
@@ -358,13 +360,15 @@ function AdminLoginPanel({ onUnlock }: { onUnlock: () => void }) {
     setChecking(true);
     setError("");
     const { data, error: dbError } = await supabase
-      .from("admins").select("id")
+      .from("admins").select("id, name")
       .eq("email", user?.primaryEmailAddress?.emailAddress)
       .eq("password", password).single();
     if (dbError || !data) {
       setError("Incorrect password or not approved yet.");
     } else {
       localStorage.setItem("findr_is_admin", "true");
+      localStorage.setItem("findr_admin_id", data.id);
+      localStorage.setItem("findr_admin_name", data.name || "Admin");
       setUnlocked(true);
       onUnlock();
     }
@@ -672,6 +676,14 @@ export default function DashboardPage() {
   const [isAdmin, setIsAdmin] = useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("findr_is_admin") === "true";
     return false;
+  });
+  const [adminId] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("findr_admin_id") ?? "";
+    return "";
+  });
+  const [adminName] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("findr_admin_name") ?? "Admin";
+    return "Admin";
   });
 
   useEffect(() => { localStorage.setItem("findr_is_admin", String(isAdmin)); }, [isAdmin]);
@@ -1005,7 +1017,6 @@ export default function DashboardPage() {
       case "reports":
         return isAdmin ? (
           <>
-            {/* Inner subtab bar — same pattern as Found/Lost */}
             <div style={{
               display: "flex", gap: "8px",
               padding: "16px 20px 0",
@@ -1036,7 +1047,6 @@ export default function DashboardPage() {
                 Reported Users
               </button>
             </div>
-
             <div className="main-panel-content" style={{ maxWidth: "720px" }}>
               <div className="main-panel-section-title">
                 {reportsTab === "items" ? "Reported Items" : "Reported Users"}
@@ -1053,6 +1063,15 @@ export default function DashboardPage() {
 
       case "ban-management":
         return isAdmin ? <BanManagementPanel adminEmail={user?.primaryEmailAddress?.emailAddress ?? ""} /> : null;
+
+      case "inbox":
+        return isAdmin ? (
+          <AdminInboxPanel
+            adminId={adminId}
+            adminName={adminName}
+            adminEmail={user?.primaryEmailAddress?.emailAddress ?? ""}
+          />
+        ) : null;
 
       default:
         return null;
@@ -1083,7 +1102,12 @@ export default function DashboardPage() {
             <span className="admin-banner__icon">🔐</span>
             <span>Admin mode active — you can delete items and ban users</span>
             <button className="admin-banner__exit"
-              onClick={() => { setIsAdmin(false); localStorage.removeItem("findr_is_admin"); }}>
+              onClick={() => {
+                setIsAdmin(false);
+                localStorage.removeItem("findr_is_admin");
+                localStorage.removeItem("findr_admin_id");
+                localStorage.removeItem("findr_admin_name");
+              }}>
               Exit Admin
             </button>
           </div>

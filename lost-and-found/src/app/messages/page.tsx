@@ -5,7 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { useSettings } from "@/context/SettingsContext";
-import { FaFlag } from "react-icons/fa6";
+import { FaFlag, FaShieldHalved } from "react-icons/fa6";
 
 interface Message {
   id: number;
@@ -30,6 +30,13 @@ interface Conversation {
   lastMessage: string;
   lastMessageAt: string;
   unread: boolean;
+  isAdminConv?: boolean;
+}
+
+interface Admin {
+  id: string;
+  email: string;
+  name: string | null;
 }
 
 const USER_REPORT_REASONS = [
@@ -135,6 +142,87 @@ function ReportUserModal({
   );
 }
 
+// ── Contact Admin Modal ──────────────────────────────────────────────────────
+function ContactAdminModal({
+  admins,
+  loading,
+  onSelect,
+  onClose,
+}: {
+  admins: Admin[];
+  loading: boolean;
+  onSelect: (admin: Admin) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="report-modal-overlay" onClick={onClose}>
+      <div className="report-modal" onClick={(e) => e.stopPropagation()} style={{ minWidth: 320 }}>
+        <p className="report-modal__title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <FaShieldHalved style={{ color: "#2563eb" }} />
+          Contact an Admin
+        </p>
+        <p className="report-modal__subtitle">Select an admin to start a conversation.</p>
+
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "24px 0", color: "#94a3b8" }}>Loading admins…</div>
+        ) : admins.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "24px 0", color: "#94a3b8" }}>No admins available right now.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, margin: "12px 0" }}>
+            {admins.map((admin) => (
+              <button
+                key={admin.id}
+                onClick={() => onSelect(admin)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 12,
+                  padding: "10px 14px", borderRadius: 10,
+                  border: "1.5px solid #e2e8f0", background: "#f8fafc",
+                  cursor: "pointer", fontFamily: "inherit", textAlign: "left",
+                  transition: "border-color 0.15s, background 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = "#2563eb";
+                  (e.currentTarget as HTMLButtonElement).style.background = "#eff6ff";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = "#e2e8f0";
+                  (e.currentTarget as HTMLButtonElement).style.background = "#f8fafc";
+                }}
+              >
+                <div style={{
+                  width: 36, height: 36, borderRadius: "50%",
+                  background: "linear-gradient(135deg, #2563eb, #7c3aed)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "#fff", fontWeight: 700, fontSize: 14, flexShrink: 0,
+                }}>
+                  {(admin.name || admin.email)[0].toUpperCase()}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>
+                    {admin.name || "Admin"}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#64748b" }}>{admin.email}</div>
+                </div>
+                <div style={{
+                  marginLeft: "auto", fontSize: 11, fontWeight: 600,
+                  color: "#2563eb", background: "#eff6ff",
+                  padding: "2px 8px", borderRadius: 99,
+                }}>
+                  Admin
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="report-modal__actions" style={{ marginTop: 4 }}>
+          <button className="report-modal__cancel" onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MessagesPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
@@ -147,6 +235,9 @@ export default function MessagesPage() {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [reportingUser, setReportingUser] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [admins, setAdmins] = useState<Admin[]>([]);
+  const [adminsLoading, setAdminsLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const [isReady, setIsReady] = useState(false);
@@ -205,6 +296,47 @@ export default function MessagesPage() {
     checkBan();
   }, [user]);
 
+  // ── Fetch admins when modal opens ──
+  const handleOpenAdminModal = async () => {
+    setShowAdminModal(true);
+    setAdminsLoading(true);
+    const { data } = await supabase.from("admins").select("id, email, name");
+    setAdmins(data ?? []);
+    setAdminsLoading(false);
+  };
+
+  // ── Start or resume a conversation with a chosen admin ──
+  const handleSelectAdmin = async (admin: Admin) => {
+    if (!user) return;
+    setShowAdminModal(false);
+
+    // Use a stable conv ID so repeat contacts re-open the same thread
+    const convId = `admin_${[user.id, admin.id].sort().join("_")}`;
+
+    // Check if this conversation already exists in our local list
+    const existing = conversations.find((c) => c.conversation_id === convId);
+    if (!existing) {
+      // Seed the conversation list entry optimistically so it appears immediately
+      setConversations((prev) => [
+        {
+          conversation_id: convId,
+          item_title: "Admin Support",
+          otherUserId: admin.id,
+          otherUserName: admin.name || "Admin",
+          otherUserEmail: admin.email,
+          lastMessage: "",
+          lastMessageAt: new Date().toISOString(),
+          unread: false,
+          isAdminConv: true,
+        },
+        ...prev,
+      ]);
+    }
+
+    setActiveConvId(convId);
+    setReportingUser(false);
+  };
+
   useEffect(() => {
     if (!user) return;
 
@@ -225,15 +357,17 @@ export default function MessagesPage() {
       for (const msg of all) {
         if (!convMap.has(msg.conversation_id)) {
           const isOwn = msg.sender_id === user.id;
+          const isAdminConv = msg.conversation_id.startsWith("admin_");
           convMap.set(msg.conversation_id, {
             conversation_id: msg.conversation_id,
-            item_title: msg.item_title,
+            item_title: isAdminConv ? "Admin Support" : msg.item_title,
             otherUserId: isOwn ? msg.receiver_id : msg.sender_id,
             otherUserName: isOwn ? (msg.receiver_name || msg.receiver_id) : msg.sender_name,
             otherUserEmail: isOwn ? (msg.receiver_email || "") : (msg.sender_email || ""),
             lastMessage: msg.text,
             lastMessageAt: msg.created_at,
             unread: !msg.read && msg.receiver_id === user.id,
+            isAdminConv,
           });
         }
       }
@@ -337,8 +471,9 @@ export default function MessagesPage() {
       receiver_id: activeConv.otherUserId,
       receiver_name: activeConv.otherUserName,
       receiver_email: activeConv.otherUserEmail,
-      item_id: activeConv.conversation_id.split("_")[0],
-      item_title: activeConv.item_title,
+      // For admin convs there's no item; use a placeholder
+      item_id: activeConv.isAdminConv ? "admin-support" : activeConv.conversation_id.split("_")[0],
+      item_title: activeConv.isAdminConv ? "Admin Support" : activeConv.item_title,
       text: trimmed,
       read: false,
     });
@@ -368,6 +503,27 @@ export default function MessagesPage() {
           </h2>
         </div>
 
+        {/* Contact Admin button */}
+        <div style={{ padding: "10px 12px", borderBottom: "1px solid #f1f5f9" }}>
+          <button
+            onClick={handleOpenAdminModal}
+            style={{
+              width: "100%", padding: "9px 14px",
+              background: "linear-gradient(135deg, #eff6ff, #f5f3ff)",
+              border: "1.5px solid #c7d2fe", borderRadius: 10,
+              cursor: "pointer", fontFamily: "inherit",
+              display: "flex", alignItems: "center", gap: 8,
+              color: "#3730a3", fontWeight: 700, fontSize: 13,
+              transition: "background 0.15s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "linear-gradient(135deg, #dbeafe, #ede9fe)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "linear-gradient(135deg, #eff6ff, #f5f3ff)")}
+          >
+            <FaShieldHalved style={{ fontSize: 14, color: "#2563eb" }} />
+            Contact an Admin
+          </button>
+        </div>
+
         <div aria-live="polite" aria-relevant="additions" role="log" style={{ flex: 1, overflowY: "auto" }}>
           {conversations.length === 0 && (
             <div style={{ padding: 32, textAlign: "center", color: "#94a3b8", fontSize: 14 }}>
@@ -390,22 +546,33 @@ export default function MessagesPage() {
               }}
             >
               <div style={{
-                width: 38, height: 38, borderRadius: "50%", background: "#2563eb",
+                width: 38, height: 38, borderRadius: "50%",
+                background: conv.isAdminConv
+                  ? "linear-gradient(135deg, #2563eb, #7c3aed)"
+                  : "#2563eb",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 color: "#fff", fontWeight: 700, fontSize: 14, flexShrink: 0,
               }}>
-                {conv.otherUserName?.[0]?.toUpperCase() ?? "?"}
+                {conv.isAdminConv ? <FaShieldHalved style={{ fontSize: 14 }} /> : (conv.otherUserName?.[0]?.toUpperCase() ?? "?")}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
                   fontWeight: conv.unread ? 700 : 600, fontSize: 14, color: "#0f172a",
-                  display: "flex", justifyContent: "space-between",
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
                 }}>
-                  <span>{conv.otherUserName}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    {conv.otherUserName}
+                    {conv.isAdminConv && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, color: "#2563eb",
+                        background: "#eff6ff", padding: "1px 6px", borderRadius: 99,
+                      }}>Admin</span>
+                    )}
+                  </span>
                   {conv.unread && (
                     <span style={{
                       width: 8, height: 8, borderRadius: "50%",
-                      background: "#2563eb", flexShrink: 0, marginTop: 4,
+                      background: "#2563eb", flexShrink: 0,
                     }} />
                   )}
                 </div>
@@ -417,7 +584,7 @@ export default function MessagesPage() {
                   whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                   fontWeight: conv.unread ? 600 : 400,
                 }}>
-                  {conv.lastMessage}
+                  {conv.lastMessage || "Start the conversation"}
                 </div>
               </div>
             </button>
@@ -437,31 +604,45 @@ export default function MessagesPage() {
           </div>
         ) : (
           <>
-            {/* Chat header with Report User button */}
+            {/* Chat header */}
             <div style={{
               padding: "14px 16px", borderBottom: "1px solid #e2e8f0",
               background: "#fff", display: "flex", alignItems: "center", gap: 10,
             }}>
               <div style={{
-                width: 38, height: 38, borderRadius: "50%", background: "#2563eb",
+                width: 38, height: 38, borderRadius: "50%",
+                background: activeConv?.isAdminConv
+                  ? "linear-gradient(135deg, #2563eb, #7c3aed)"
+                  : "#2563eb",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 color: "#fff", fontWeight: 700, fontSize: 14,
               }}>
-                {activeConv?.otherUserName?.[0]?.toUpperCase() ?? "?"}
+                {activeConv?.isAdminConv
+                  ? <FaShieldHalved style={{ fontSize: 14 }} />
+                  : (activeConv?.otherUserName?.[0]?.toUpperCase() ?? "?")}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a", display: "flex", alignItems: "center", gap: 6 }}>
                   {activeConv?.otherUserName}
+                  {activeConv?.isAdminConv && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, color: "#2563eb",
+                      background: "#eff6ff", padding: "2px 7px", borderRadius: 99,
+                    }}>Admin</span>
+                  )}
                 </div>
                 <div style={{ fontSize: 12, color: "#64748b" }}>{activeConv?.item_title}</div>
               </div>
-              <button
-                onClick={() => setReportingUser(true)}
-                className="msg-report-btn"
-              >
-                <FaFlag style={{ fontSize: 11 }} />
-                Report User
-              </button>
+              {/* Only show Report User for non-admin conversations */}
+              {!activeConv?.isAdminConv && (
+                <button
+                  onClick={() => setReportingUser(true)}
+                  className="msg-report-btn"
+                >
+                  <FaFlag style={{ fontSize: 11 }} />
+                  Report User
+                </button>
+              )}
             </div>
 
             <div style={{
@@ -473,8 +654,19 @@ export default function MessagesPage() {
                   flex: 1, display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", color: "#94a3b8",
                 }}>
-                  <span style={{ fontSize: 32 }}>👋</span>
-                  <p style={{ fontSize: 13 }}>{uiStartConversation}</p>
+                  {activeConv?.isAdminConv ? (
+                    <>
+                      <FaShieldHalved style={{ fontSize: 32, color: "#c7d2fe", marginBottom: 8 }} />
+                      <p style={{ fontSize: 13, textAlign: "center", maxWidth: 220 }}>
+                        You're chatting with an admin. Ask anything — they're here to help.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ fontSize: 32 }}>👋</span>
+                      <p style={{ fontSize: 13 }}>{uiStartConversation}</p>
+                    </>
+                  )}
                 </div>
               )}
               {messages.map((msg) => {
@@ -550,6 +742,16 @@ export default function MessagesPage() {
             email: user.primaryEmailAddress?.emailAddress || "",
           }}
           onClose={() => setReportingUser(false)}
+        />
+      )}
+
+      {/* Contact Admin Modal */}
+      {showAdminModal && (
+        <ContactAdminModal
+          admins={admins}
+          loading={adminsLoading}
+          onSelect={handleSelectAdmin}
+          onClose={() => setShowAdminModal(false)}
         />
       )}
     </div>
