@@ -1,5 +1,6 @@
 "use client";
 
+import "./messages.css";
 import { useEffect, useState, useRef } from "react";
 import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabaseClient";
@@ -142,7 +143,6 @@ function ReportUserModal({
   );
 }
 
-// ── Contact Admin Modal ──────────────────────────────────────────────────────
 function ContactAdminModal({
   admins,
   loading,
@@ -156,60 +156,33 @@ function ContactAdminModal({
 }) {
   return (
     <div className="report-modal-overlay" onClick={onClose}>
-      <div className="report-modal" onClick={(e) => e.stopPropagation()} style={{ minWidth: 320 }}>
-        <p className="report-modal__title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <FaShieldHalved style={{ color: "#2563eb" }} />
+      <div className="report-modal" onClick={(e) => e.stopPropagation()}>
+        <p className="report-modal__title">
+          <FaShieldHalved className="messages-sidebar__admin-icon" />
           Contact an Admin
         </p>
         <p className="report-modal__subtitle">Select an admin to start a conversation.</p>
 
         {loading ? (
-          <div style={{ textAlign: "center", padding: "24px 0", color: "#94a3b8" }}>Loading admins…</div>
+          <div className="admin-modal-loading">Loading admins…</div>
         ) : admins.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "24px 0", color: "#94a3b8" }}>No admins available right now.</div>
+          <div className="admin-modal-loading">No admins available right now.</div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, margin: "12px 0" }}>
+          <div style={{ margin: "12px 0" }}>
             {admins.map((admin) => (
               <button
                 key={admin.id}
+                className="admin-select-btn"
                 onClick={() => onSelect(admin)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 12,
-                  padding: "10px 14px", borderRadius: 10,
-                  border: "1.5px solid #e2e8f0", background: "#f8fafc",
-                  cursor: "pointer", fontFamily: "inherit", textAlign: "left",
-                  transition: "border-color 0.15s, background 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "#2563eb";
-                  (e.currentTarget as HTMLButtonElement).style.background = "#eff6ff";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "#e2e8f0";
-                  (e.currentTarget as HTMLButtonElement).style.background = "#f8fafc";
-                }}
               >
-                <div style={{
-                  width: 36, height: 36, borderRadius: "50%",
-                  background: "linear-gradient(135deg, #2563eb, #7c3aed)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: "#fff", fontWeight: 700, fontSize: 14, flexShrink: 0,
-                }}>
+                <div className="admin-select-avatar">
                   {(admin.name || admin.email)[0].toUpperCase()}
                 </div>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>
-                    {admin.name || "Admin"}
-                  </div>
-                  <div style={{ fontSize: 12, color: "#64748b" }}>{admin.email}</div>
+                  <div className="admin-select-name">{admin.name || "Admin"}</div>
+                  <div className="admin-select-email">{admin.email}</div>
                 </div>
-                <div style={{
-                  marginLeft: "auto", fontSize: 11, fontWeight: 600,
-                  color: "#2563eb", background: "#eff6ff",
-                  padding: "2px 8px", borderRadius: 99,
-                }}>
-                  Admin
-                </div>
+                <div className="admin-select-tag">Admin</div>
               </button>
             ))}
           </div>
@@ -274,7 +247,6 @@ export default function MessagesPage() {
     if (isLoaded && !user) router.push("/");
   }, [isLoaded, user, router]);
 
-  // ── Ban check ──
   useEffect(() => {
     if (!user) { setBanChecked(true); return; }
     const checkBan = async () => {
@@ -286,17 +258,13 @@ export default function MessagesPage() {
       if (data) {
         const isPermanent = !data.suspended_until;
         const isSuspended = data.suspended_until && new Date(data.suspended_until) > new Date();
-        if (isPermanent || isSuspended) {
-          router.push("/banned");
-          return;
-        }
+        if (isPermanent || isSuspended) { router.push("/banned"); return; }
       }
       setBanChecked(true);
     };
     checkBan();
   }, [user]);
 
-  // ── Fetch admins when modal opens ──
   const handleOpenAdminModal = async () => {
     setShowAdminModal(true);
     setAdminsLoading(true);
@@ -305,18 +273,12 @@ export default function MessagesPage() {
     setAdminsLoading(false);
   };
 
-  // ── Start or resume a conversation with a chosen admin ──
   const handleSelectAdmin = async (admin: Admin) => {
     if (!user) return;
     setShowAdminModal(false);
-
-    // Use a stable conv ID so repeat contacts re-open the same thread
     const convId = `admin_${[user.id, admin.id].sort().join("_")}`;
-
-    // Check if this conversation already exists in our local list
     const existing = conversations.find((c) => c.conversation_id === convId);
     if (!existing) {
-      // Seed the conversation list entry optimistically so it appears immediately
       setConversations((prev) => [
         {
           conversation_id: convId,
@@ -332,7 +294,6 @@ export default function MessagesPage() {
         ...prev,
       ]);
     }
-
     setActiveConvId(convId);
     setReportingUser(false);
   };
@@ -471,7 +432,6 @@ export default function MessagesPage() {
       receiver_id: activeConv.otherUserId,
       receiver_name: activeConv.otherUserName,
       receiver_email: activeConv.otherUserEmail,
-      // For admin convs there's no item; use a placeholder
       item_id: activeConv.isAdminConv ? "admin-support" : activeConv.conversation_id.split("_")[0],
       item_title: activeConv.isAdminConv ? "Admin Support" : activeConv.item_title,
       text: trimmed,
@@ -487,103 +447,56 @@ export default function MessagesPage() {
   if (!banChecked || !isLoaded || !user || !isReady) return null;
 
   return (
-    <div style={{
-      display: "flex", height: "calc(100vh - 60px)",
-      fontFamily: "system-ui, sans-serif", background: "#f8fafc",
-    }}>
-      {/* Sidebar */}
-      <div style={{
-        width: 300, flexShrink: 0, background: "#fff",
-        borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column",
-        overflow: "hidden",
-      }}>
-        <div style={{ padding: "18px 16px 12px", borderBottom: "1px solid #f1f5f9" }}>
-          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#0f172a" }}>
-            {uiMessagesTitle}
-          </h2>
+    <div className="messages-layout">
+
+      {/* ── Sidebar ── */}
+      <div className="messages-sidebar">
+        <div className="messages-sidebar__header">
+          <h2 className="messages-sidebar__title">{uiMessagesTitle}</h2>
         </div>
 
-        {/* Contact Admin button */}
-        <div style={{ padding: "10px 12px", borderBottom: "1px solid #f1f5f9" }}>
-          <button
-            onClick={handleOpenAdminModal}
-            style={{
-              width: "100%", padding: "9px 14px",
-              background: "linear-gradient(135deg, #eff6ff, #f5f3ff)",
-              border: "1.5px solid #c7d2fe", borderRadius: 10,
-              cursor: "pointer", fontFamily: "inherit",
-              display: "flex", alignItems: "center", gap: 8,
-              color: "#3730a3", fontWeight: 700, fontSize: 13,
-              transition: "background 0.15s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "linear-gradient(135deg, #dbeafe, #ede9fe)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "linear-gradient(135deg, #eff6ff, #f5f3ff)")}
-          >
-            <FaShieldHalved style={{ fontSize: 14, color: "#2563eb" }} />
+        <div className="messages-sidebar__admin-btn-wrap">
+          <button className="messages-sidebar__admin-btn" onClick={handleOpenAdminModal}>
+            <FaShieldHalved className="messages-sidebar__admin-icon" />
             Contact an Admin
           </button>
         </div>
 
-        <div aria-live="polite" aria-relevant="additions" role="log" style={{ flex: 1, overflowY: "auto" }}>
+        <div
+          className="messages-sidebar__list"
+          aria-live="polite"
+          aria-relevant="additions"
+          role="log"
+        >
           {conversations.length === 0 && (
-            <div style={{ padding: 32, textAlign: "center", color: "#94a3b8", fontSize: 14 }}>
-              <div style={{ fontSize: 36, marginBottom: 8 }}>💬</div>
+            <div className="messages-sidebar__empty">
+              <div className="messages-sidebar__empty-icon">💬</div>
               {uiNoConversations}
             </div>
           )}
           {conversations.map((conv) => (
             <button
               key={conv.conversation_id}
+              className={`messages-conv-row${activeConvId === conv.conversation_id ? " messages-conv-row--active" : ""}`}
               onClick={() => { setActiveConvId(conv.conversation_id); setReportingUser(false); }}
-              style={{
-                width: "100%", padding: "14px 16px",
-                background: activeConvId === conv.conversation_id ? "#eff6ff" : "transparent",
-                border: "none",
-                borderLeft: activeConvId === conv.conversation_id ? "3px solid #2563eb" : "3px solid transparent",
-                borderBottom: "1px solid #f8fafc",
-                cursor: "pointer", textAlign: "left", fontFamily: "inherit",
-                display: "flex", alignItems: "flex-start", gap: 10,
-              }}
             >
-              <div style={{
-                width: 38, height: 38, borderRadius: "50%",
-                background: conv.isAdminConv
-                  ? "linear-gradient(135deg, #2563eb, #7c3aed)"
-                  : "#2563eb",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: "#fff", fontWeight: 700, fontSize: 14, flexShrink: 0,
-              }}>
-                {conv.isAdminConv ? <FaShieldHalved style={{ fontSize: 14 }} /> : (conv.otherUserName?.[0]?.toUpperCase() ?? "?")}
+              <div className={`messages-conv-avatar${conv.isAdminConv ? " messages-conv-avatar--admin" : ""}`}>
+                {conv.isAdminConv
+                  ? <FaShieldHalved style={{ fontSize: 14 }} />
+                  : (conv.otherUserName?.[0]?.toUpperCase() ?? "?")}
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{
-                  fontWeight: conv.unread ? 700 : 600, fontSize: 14, color: "#0f172a",
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <div className="messages-conv-info">
+                <div className="messages-conv-top">
+                  <span className={`messages-conv-name${conv.unread ? " messages-conv-name--unread" : ""}`}>
                     {conv.otherUserName}
                     {conv.isAdminConv && (
-                      <span style={{
-                        fontSize: 10, fontWeight: 700, color: "#2563eb",
-                        background: "#eff6ff", padding: "1px 6px", borderRadius: 99,
-                      }}>Admin</span>
+                      <span className="messages-conv-admin-badge">Admin</span>
                     )}
                   </span>
-                  {conv.unread && (
-                    <span style={{
-                      width: 8, height: 8, borderRadius: "50%",
-                      background: "#2563eb", flexShrink: 0,
-                    }} />
-                  )}
+                  {conv.unread && <span className="messages-conv-unread-dot" />}
                 </div>
-                <div style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, marginTop: 1 }}>
-                  {conv.item_title}
-                </div>
-                <div style={{
-                  fontSize: 13, color: "#64748b", marginTop: 1,
-                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                  fontWeight: conv.unread ? 600 : 400,
-                }}>
+                <div className="messages-conv-item">{conv.item_title}</div>
+                <div className={`messages-conv-preview${conv.unread ? " messages-conv-preview--unread" : ""}`}>
                   {conv.lastMessage || "Start the conversation"}
                 </div>
               </div>
@@ -592,79 +505,52 @@ export default function MessagesPage() {
         </div>
       </div>
 
-      {/* Chat area */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {/* ── Chat area ── */}
+      <div className="messages-chat">
         {!activeConvId ? (
-          <div style={{
-            flex: 1, display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center", color: "#94a3b8",
-          }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>💬</div>
+          <div className="messages-chat__empty">
+            <div className="messages-chat__empty-icon">💬</div>
             <p>{uiSelectConversation}</p>
           </div>
         ) : (
           <>
-            {/* Chat header */}
-            <div style={{
-              padding: "14px 16px", borderBottom: "1px solid #e2e8f0",
-              background: "#fff", display: "flex", alignItems: "center", gap: 10,
-            }}>
-              <div style={{
-                width: 38, height: 38, borderRadius: "50%",
-                background: activeConv?.isAdminConv
-                  ? "linear-gradient(135deg, #2563eb, #7c3aed)"
-                  : "#2563eb",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: "#fff", fontWeight: 700, fontSize: 14,
-              }}>
+            {/* Header */}
+            <div className="messages-chat__header">
+              <div className={`messages-conv-avatar${activeConv?.isAdminConv ? " messages-conv-avatar--admin" : ""}`}>
                 {activeConv?.isAdminConv
                   ? <FaShieldHalved style={{ fontSize: 14 }} />
                   : (activeConv?.otherUserName?.[0]?.toUpperCase() ?? "?")}
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a", display: "flex", alignItems: "center", gap: 6 }}>
+              <div className="messages-chat__header-info">
+                <div className="messages-chat__header-name">
                   {activeConv?.otherUserName}
                   {activeConv?.isAdminConv && (
-                    <span style={{
-                      fontSize: 10, fontWeight: 700, color: "#2563eb",
-                      background: "#eff6ff", padding: "2px 7px", borderRadius: 99,
-                    }}>Admin</span>
+                    <span className="messages-chat__header-badge">Admin</span>
                   )}
                 </div>
-                <div style={{ fontSize: 12, color: "#64748b" }}>{activeConv?.item_title}</div>
+                <div className="messages-chat__header-sub">{activeConv?.item_title}</div>
               </div>
-              {/* Only show Report User for non-admin conversations */}
               {!activeConv?.isAdminConv && (
-                <button
-                  onClick={() => setReportingUser(true)}
-                  className="msg-report-btn"
-                >
+                <button className="msg-report-btn" onClick={() => setReportingUser(true)}>
                   <FaFlag style={{ fontSize: 11 }} />
                   Report User
                 </button>
               )}
             </div>
 
-            <div style={{
-              flex: 1, overflowY: "auto", padding: 16,
-              display: "flex", flexDirection: "column", gap: 4, background: "#f8fafc",
-            }}>
+            {/* Bubbles */}
+            <div className="messages-chat__bubbles">
               {messages.length === 0 && (
-                <div style={{
-                  flex: 1, display: "flex", flexDirection: "column",
-                  alignItems: "center", justifyContent: "center", color: "#94a3b8",
-                }}>
+                <div className="messages-chat__conv-empty">
                   {activeConv?.isAdminConv ? (
                     <>
-                      <FaShieldHalved style={{ fontSize: 32, color: "#c7d2fe", marginBottom: 8 }} />
-                      <p style={{ fontSize: 13, textAlign: "center", maxWidth: 220 }}>
-                        You're chatting with an admin. Ask anything — they're here to help.
-                      </p>
+                      <FaShieldHalved className="messages-chat__admin-empty-icon" />
+                      <p>You're chatting with an admin. Ask anything — they're here to help.</p>
                     </>
                   ) : (
                     <>
                       <span style={{ fontSize: 32 }}>👋</span>
-                      <p style={{ fontSize: 13 }}>{uiStartConversation}</p>
+                      <p>{uiStartConversation}</p>
                     </>
                   )}
                 </div>
@@ -675,56 +561,37 @@ export default function MessagesPage() {
                   hour: "2-digit", minute: "2-digit",
                 });
                 return (
-                  <div key={msg.id} style={{
-                    display: "flex", flexDirection: "column",
-                    alignItems: isOwn ? "flex-end" : "flex-start", marginBottom: 6,
-                  }}>
-                    <div style={{
-                      maxWidth: "72%", padding: "9px 13px",
-                      borderRadius: isOwn ? "16px 16px 3px 16px" : "16px 16px 16px 3px",
-                      background: isOwn ? "#2563eb" : "#fff",
-                      color: isOwn ? "#fff" : "#0f172a",
-                      fontSize: 14, lineHeight: 1.5, wordBreak: "break-word",
-                      boxShadow: isOwn ? "0 2px 8px rgba(37,99,235,0.2)" : "0 1px 4px rgba(0,0,0,0.08)",
-                    }}>
+                  <div
+                    key={msg.id}
+                    className={`msg-row${isOwn ? " msg-row--own" : " msg-row--other"}`}
+                  >
+                    <div className={`msg-bubble${isOwn ? " msg-bubble--own" : " msg-bubble--other"}`}>
                       {msg.text}
                     </div>
-                    <span style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>{time}</span>
+                    <span className="msg-time">{time}</span>
                   </div>
                 );
               })}
               <div ref={bottomRef} />
             </div>
 
-            <div style={{
-              display: "flex", gap: 8, padding: "12px 16px",
-              borderTop: "1px solid #e2e8f0", background: "#fff", alignItems: "flex-end",
-            }}>
+            {/* Input */}
+            <div className="messages-chat__input-row">
               <textarea
                 rows={1}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={uiTypePlaceholder}
-                style={{
-                  flex: 1, border: "1.5px solid #e2e8f0", borderRadius: 20,
-                  padding: "9px 14px", fontSize: 14, resize: "none",
-                  fontFamily: "inherit", outline: "none", lineHeight: 1.5,
-                  background: "#f8fafc", color: "#0f172a",
-                }}
+                className="messages-chat__textarea"
               />
               <button
                 onClick={handleSend}
                 disabled={!text.trim() || sending}
-                style={{
-                  width: 38, height: 38, borderRadius: "50%",
-                  background: text.trim() ? "#2563eb" : "#e2e8f0",
-                  color: text.trim() ? "#fff" : "#94a3b8",
-                  border: "none", fontSize: 18, cursor: text.trim() ? "pointer" : "default",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0, transition: "background 0.15s",
-                }}
-              >↑</button>
+                className={`messages-chat__send${text.trim() ? " messages-chat__send--active" : " messages-chat__send--inactive"}`}
+              >
+                ↑
+              </button>
             </div>
           </>
         )}
