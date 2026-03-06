@@ -215,6 +215,7 @@ body.colorblind {
   overflow: hidden;
   transition: background 0.2s ease, border-color 0.2s ease;
   z-index: 10;
+  margin-top: 16px;
 }
 
 /* Thin accent line at top of sidebar */
