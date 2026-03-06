@@ -1,0 +1,318 @@
+@import url("https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&family=Poppins:wght@400;500;600;700&display=swap");
+
+/* ═══════════════════════════════════════════
+   CSS VARIABLES
+═══════════════════════════════════════════ */
+:root,
+body.dark {
+  --sa-bg-page:      #0b1120;
+  --sa-bg-card:      #0f1729;
+  --sa-bg-inner:     #131d30;
+  --sa-bg-input:     #1a2540;
+  --sa-bg-hover:     #1e2d45;
+  --sa-border:       #1e2d45;
+  --sa-border-soft:  #253352;
+  --sa-text-primary: #e8edf5;
+  --sa-text-muted:   #8899bb;
+  --sa-text-faint:   #4a5a7a;
+  --sa-accent:       #7c3aed;
+  --sa-accent-light: #1e1545;
+  --sa-shadow:       0 20px 40px rgba(0,0,0,0.35);
+  --sa-danger:       #f87171;
+  --sa-danger-bg:    #2d1515;
+  --sa-danger-border:#7f1d1d;
+  --sa-success:      #4ade80;
+  --sa-success-bg:   #052e16;
+  --sa-success-border:#14532d;
+  --sa-link:         #818cf8;
+}
+
+body.light {
+  --sa-bg-page:      #f0f2f8;
+  --sa-bg-card:      #ffffff;
+  --sa-bg-inner:     #f8fafc;
+  --sa-bg-input:     #f8fafc;
+  --sa-bg-hover:     #f1f5f9;
+  --sa-border:       #e8eaf0;
+  --sa-border-soft:  #e2e8f0;
+  --sa-text-primary: #0f172a;
+  --sa-text-muted:   #64748b;
+  --sa-text-faint:   #94a3b8;
+  --sa-accent:       #7c3aed;
+  --sa-accent-light: #ede9fe;
+  --sa-shadow:       0 20px 40px rgba(0,0,0,0.08);
+  --sa-danger:       #dc2626;
+  --sa-danger-bg:    #fff1f2;
+  --sa-danger-border:#fca5a5;
+  --sa-success:      #16a34a;
+  --sa-success-bg:   #f0fdf4;
+  --sa-success-border:#86efac;
+  --sa-link:         #2563eb;
+}
+
+body.high-contrast {
+  --sa-bg-page:      #000000;
+  --sa-bg-card:      #000000;
+  --sa-bg-inner:     #0a0a00;
+  --sa-bg-input:     #000000;
+  --sa-bg-hover:     #111100;
+  --sa-border:       #ffff00;
+  --sa-border-soft:  #ffff00;
+  --sa-text-primary: #ffff00;
+  --sa-text-muted:   #cccc00;
+  --sa-text-faint:   #999900;
+  --sa-accent:       #ffff00;
+  --sa-accent-light: #1a1a00;
+  --sa-shadow:       none;
+  --sa-danger:       #ffff00;
+  --sa-danger-bg:    #1a1a00;
+  --sa-danger-border:#ffff00;
+  --sa-success:      #ffff00;
+  --sa-success-bg:   #1a1a00;
+  --sa-success-border:#ffff00;
+  --sa-link:         #ffff00;
+}
+
+body.colorblind {
+  --sa-bg-page:      #e6f0ff;
+  --sa-bg-card:      #ffffff;
+  --sa-bg-inner:     #f0f6ff;
+  --sa-bg-input:     #f0f6ff;
+  --sa-bg-hover:     #dbeafe;
+  --sa-border:       #bfdbfe;
+  --sa-border-soft:  #93c5fd;
+  --sa-text-primary: #003366;
+  --sa-text-muted:   #1e4d8c;
+  --sa-text-faint:   #5b7fa6;
+  --sa-accent:       #003366;
+  --sa-accent-light: #dbeafe;
+  --sa-shadow:       0 20px 40px rgba(0,51,102,0.1);
+  --sa-danger:       #003366;
+  --sa-danger-bg:    #dbeafe;
+  --sa-danger-border:#003366;
+  --sa-success:      #003366;
+  --sa-success-bg:   #dbeafe;
+  --sa-success-border:#003366;
+  --sa-link:         #003366;
+}
+
+/* ═══════════════════════════════════════════
+   PAGE
+═══════════════════════════════════════════ */
+.sa-page {
+  min-height: 100vh;
+  background: var(--sa-bg-page);
+  padding: 48px 16px;
+  font-family: "Poppins", sans-serif;
+  transition: background 0.2s ease;
+}
+
+.sa-container {
+  max-width: 740px;
+  margin: 0 auto;
+}
+
+/* ═══════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════ */
+.sa-header {
+  margin-bottom: 36px;
+}
+
+.sa-title {
+  font-family: "Ubuntu", sans-serif;
+  font-size: 1.9rem;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  margin: 0 0 6px;
+  color: var(--sa-text-primary);
+}
+
+.sa-subtitle {
+  font-size: 0.9rem;
+  color: var(--sa-text-muted);
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════
+   SECTION
+═══════════════════════════════════════════ */
+.sa-section {
+  margin-bottom: 44px;
+}
+
+.sa-section-title {
+  font-family: "Ubuntu", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--sa-text-faint);
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sa-badge {
+  background: var(--sa-danger-bg);
+  color: var(--sa-danger);
+  border: 1px solid var(--sa-danger-border);
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: "Ubuntu", sans-serif;
+  letter-spacing: 0;
+}
+
+.sa-empty {
+  color: var(--sa-text-faint);
+  font-size: 14px;
+  padding: 12px 0;
+}
+
+/* ═══════════════════════════════════════════
+   REQUEST CARD
+═══════════════════════════════════════════ */
+.sa-card {
+  background: var(--sa-bg-card);
+  border: 1px solid var(--sa-border);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+/* Thin left accent line matching dashboard active tabs */
+.sa-card::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--sa-accent);
+  border-radius: 16px 0 0 16px;
+  opacity: 0.5;
+}
+
+.sa-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.sa-card-name {
+  font-family: "Ubuntu", sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  margin: 0 0 3px;
+  color: var(--sa-text-primary);
+}
+
+.sa-card-email {
+  color: var(--sa-text-muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* Status pill */
+.sa-status {
+  font-family: "Ubuntu", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.sa-status--pending  { color: #d97706; background: #fffbeb; border-color: #fcd34d; }
+.sa-status--approved { color: var(--sa-success); background: var(--sa-success-bg); border-color: var(--sa-success-border); }
+.sa-status--rejected { color: var(--sa-danger);  background: var(--sa-danger-bg);  border-color: var(--sa-danger-border); }
+.sa-status--removed  { color: var(--sa-text-faint); background: var(--sa-bg-inner); border-color: var(--sa-border); }
+
+body.dark .sa-status--pending { background: #2a1f00; border-color: #92400e; }
+
+/* Details */
+.sa-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+
+.sa-detail {
+  font-size: 13px;
+  color: var(--sa-text-primary);
+}
+
+.sa-detail-label {
+  font-weight: 600;
+  margin-right: 6px;
+  color: var(--sa-text-muted);
+  font-family: "Ubuntu", sans-serif;
+}
+
+.sa-detail-value {
+  color: var(--sa-text-primary);
+}
+
+/* ID photo link */
+.sa-image-link {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sa-link);
+  text-decoration: none;
+  margin-bottom: 14px;
+  font-family: "Ubuntu", sans-serif;
+  transition: opacity 0.15s ease;
+}
+
+.sa-image-link:hover { opacity: 0.75; text-decoration: underline; }
+
+/* Actions */
+.sa-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* Shared button base */
+.sa-btn {
+  font-family: "Ubuntu", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.12s ease;
+  border: none;
+}
+
+.sa-btn:hover:not(:disabled) { transform: translateY(-1px); opacity: 0.9; }
+.sa-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.sa-btn--approve {
+  background: var(--sa-success);
+  color: #ffffff;
+}
+
+body.high-contrast .sa-btn--approve { color: #000000; }
+body.colorblind .sa-btn--approve   { color: #ffffff; }
+
+.sa-btn--reject {
+  background: var(--sa-danger-bg);
+  color: var(--sa-danger);
+  border: 1.5px solid var(--sa-danger-border);
+}
+
+.sa-btn--remove {
+  background: var(--sa-danger-bg);
+  color: var(--sa-danger);
+  border: 1.5px solid var(--sa-danger-border);
+}
