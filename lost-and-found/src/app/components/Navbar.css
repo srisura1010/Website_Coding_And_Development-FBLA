@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&family=Poppins:wght@400;500;600;700&display=swap");
 
 /* ===== RESET (can stay global or here) ===== */
 *,
@@ -11,9 +11,13 @@ html,
 body {
   margin: 0;
   padding: 0;
-  width: 100%;
-  overflow-x: hidden;
+  background-color: #0b1120;
 }
+
+body.light      { background-color: #f0f2f8; }
+body.dark       { background-color: #0b1120; }
+body.high-contrast { background-color: #000000; }
+body.colorblind { background-color: #e6f0ff; }
 
 /* ===== NAVBAR ===== */
 .navbar {
@@ -43,10 +47,10 @@ body {
 .logo {
   text-decoration: none;
   margin: 0;
-  font-size: 1.4rem;
-  font-family: Helvetica, sans-serif;
-  font-weight: 600;
-  letter-spacing: 0.4px;
+  font-size: 1.45rem;
+  font-family: "Ubuntu", sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.2px;
   white-space: nowrap;
 }
 
@@ -62,7 +66,7 @@ body {
 
 .logo:hover {
   cursor: pointer;
-  color: inherit;
+  opacity: 0.85;
 }
 
 /* ===== NAV LINKS ===== */
@@ -77,42 +81,47 @@ body {
 
 /* ===== DASHBOARD LINK ===== */
 .nav-links .dashboard-link {
-  font-family: "Poppins", sans-serif;
-  color: white;
+  font-family: "Ubuntu", sans-serif;
+  color: rgba(255, 255, 255, 0.85);
   background: transparent;
   text-decoration: none;
   font-weight: 500;
-  font-size: 0.85rem;
-  padding: 0.45rem 0.9rem;
-  border: 1px solid rgb(185, 185, 185);
-  border-radius: 6px;
+  font-size: 0.88rem;
+  letter-spacing: 0.1px;
+  padding: 0.42rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
 }
 
 .nav-links .dashboard-link:hover {
-  background-color: white;
-  color: #000;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
 }
 
 /* ===== SIGN UP BUTTON ===== */
 .nav-links .sign-up {
-  font-family: "Poppins", sans-serif;
-  padding: 0.45rem 0.9rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
+  font-family: "Ubuntu", sans-serif;
+  padding: 0.42rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.1px;
   background-color: #ffd814;
-  color: #1f1f1f;
-  font-weight: 600;
+  color: #1a1a1a;
   border: 1px solid #ffd814;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .nav-links .sign-up:hover {
-  background-color: #1f1f1f;
+  background-color: #1a1a1a;
   color: #ffd814;
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 216, 20, 0.25);
 }
 
 /* ===== ADD ITEM BUTTON ===== */
@@ -558,14 +567,16 @@ body.light .navbar .logo {
 }
 
 body.light .navbar .dashboard-link {
-  color: #1f2937;
-  border: 1px solid #cbd5e1;
+  color: #475569;
+  border: 1px solid #e2e8f0;
   background-color: transparent;
 }
 
 body.light .navbar .dashboard-link:hover {
-  background-color: #1f2937;
-  color: white;
+  background-color: #f1f5f9;
+  color: #0f172a;
+  border-color: #c4b5fd;
+  transform: translateY(-1px);
 }
 
 body.light .navbar .sign-up {
@@ -616,6 +627,7 @@ body.high-contrast .navbar .dashboard-link {
 body.high-contrast .navbar .dashboard-link:hover {
   background-color: yellow;
   color: black;
+  transform: none;
 }
 
 body.high-contrast .navbar .sign-up {
@@ -627,6 +639,7 @@ body.high-contrast .navbar .sign-up {
 body.high-contrast .navbar .sign-up:hover {
   background-color: black;
   color: yellow;
+  box-shadow: none;
 }
 
 body.high-contrast .navbar .add-btn {
@@ -647,6 +660,7 @@ body.high-contrast .navbar .settings-icon-btn:hover {
   background-color: rgba(255, 255, 0, 0.2);
 }
 
+/* ===== COLORBLIND MODE ===== */
 body.colorblind .navbar {
   background-color: #0b3d91;
   color: #ffdd44;
@@ -666,6 +680,7 @@ body.colorblind .navbar .dashboard-link {
 body.colorblind .navbar .dashboard-link:hover {
   background-color: #ffdd44;
   color: #0b3d91;
+  transform: translateY(-1px);
 }
 
 body.colorblind .navbar .sign-up {
@@ -677,6 +692,7 @@ body.colorblind .navbar .sign-up {
 body.colorblind .navbar .sign-up:hover {
   background-color: #0b3d91;
   color: #ffdd44;
+  box-shadow: none;
 }
 
 body.colorblind .navbar .add-btn {
