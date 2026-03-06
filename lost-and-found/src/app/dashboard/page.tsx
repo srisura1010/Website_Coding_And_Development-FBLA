@@ -8,7 +8,7 @@ import emailjs from "@emailjs/browser";
 import { useSettings } from "@/context/SettingsContext";
 import { useEffect, useState, useRef } from "react";
 import { getConversationId } from "@/app/components/MessagingSystem";
-import { FaFlag, FaShieldHalved } from "react-icons/fa6";
+import { FaFlag } from "react-icons/fa6";
 import { useRouter } from "next/navigation";
 import { AdminInboxPanel } from "@/app/components/AdminInboxPanel";
 
@@ -86,9 +86,9 @@ const SIDEBAR_TABS: { id: TabId; label: string; icon: React.ReactNode; adminOnly
   { id: "report-lost",    label: "Report Lost Item",   icon: "" },
   { id: "become-admin",   label: "Become an Admin",    icon: "" },
   { id: "admin-login",    label: "Admin",              icon: "" },
-  { id: "reports",        label: "Reports",            icon: "🚩", adminOnly: true },
-  { id: "ban-management", label: "Ban Management",     icon: "",   adminOnly: true },
-  { id: "inbox",          label: "Inbox",              icon: "📨", adminOnly: true },
+  { id: "reports",        label: "Reports",            icon: "", adminOnly: true },
+  { id: "ban-management", label: "Ban Management",     icon: "", adminOnly: true },
+  { id: "inbox",          label: "Inbox",              icon: "", adminOnly: true },
 ];
 
 function ReportModal({
@@ -309,36 +309,51 @@ function AdminPanel() {
         <div className="panel-success">
           <span className="panel-success__icon">✓</span>
           <p>Request submitted!</p>
-          <p className="panel-success__sub">We'll review and get back to you.</p>
+          <p className="panel-success__sub">We will review and get back to you.</p>
         </div>
       ) : (
         <form className="panel-form" onSubmit={handleAdminSubmit}>
           <label className="panel-form__label">Full Name</label>
           <input className="panel-form__input" type="text" placeholder="Jane Smith" required value={adminForm.name} readOnly />
+
           <label className="panel-form__label">Email</label>
           <input className="panel-form__input" type="email" placeholder="jane@school.edu" required value={adminForm.email} readOnly />
+
           <label className="panel-form__label">School / Institution</label>
           <input className="panel-form__input" type="text" placeholder="Lincoln High School" required value={adminForm.school}
             onChange={(e) => setAdminForm((p) => ({ ...p, school: e.target.value }))} />
+
           <label className="panel-form__label">Teacher ID / Staff Number</label>
           <input className="panel-form__input" type="text" placeholder="T-00123" required value={adminForm.teacherId}
             onChange={(e) => setAdminForm((p) => ({ ...p, teacherId: e.target.value }))} />
+
           <label className="panel-form__label">Upload ID or Badge Photo</label>
-          <input className="panel-form__file" type="file" accept="image/*"
-            onChange={(e) => { if (e.target.files?.[0]) setAdminFile(e.target.files[0]); }} />
+          <label className="panel-form__file-label" htmlFor="admin-file-upload">
+            <span className="panel-form__file-icon">+</span>
+            <span className="panel-form__file-text">
+              {adminFile ? adminFile.name : "Upload ID or badge photo"}
+            </span>
+          </label>
+          <input
+            id="admin-file-upload"
+            className="panel-form__file"
+            type="file"
+            accept="image/*"
+            onChange={(e) => { if (e.target.files?.[0]) setAdminFile(e.target.files[0]); }}
+          />
+          <p className="panel-form__file-hint">PNG, JPG up to 10MB</p>
+
           {adminFile && (
             <div className="panel-form__preview-wrap">
               <img src={URL.createObjectURL(adminFile)} alt="preview" className="panel-form__preview" />
               <button type="button" className="panel-form__preview-remove" onClick={() => setAdminFile(null)}>×</button>
             </div>
           )}
+
           <label className="panel-form__label">Anything else we should know?</label>
-          <textarea className="panel-form__textarea" placeholder="e.g. I run the lost & found office..."
+          <textarea className="panel-form__textarea" placeholder="e.g. I run the lost and found office..."
             value={adminForm.extraInfo} onChange={(e) => setAdminForm((p) => ({ ...p, extraInfo: e.target.value }))} />
-          <div className="admin-form__notice">
-            <span className="admin-form__notice-icon">ℹ️</span>
-            Submissions are reviewed manually. You'll be notified at your email.
-          </div>
+
           <button type="submit" className="panel-form__submit" disabled={adminUploading}>
             {adminUploading ? "Submitting..." : "Submit Request"}
           </button>
@@ -449,7 +464,7 @@ function ReportedItemsPanel({ updateItemStatus }: { updateItemStatus: (id: numbe
             <p className="reported-card__meta">
               Reported by {report.reporter_name} · {new Date(report.created_at).toLocaleDateString()}
             </p>
-            <p className="reported-card__meta" style={{ color: "#ef4444", marginTop: "2px" }}>
+            <p className="reported-card__meta" style={{ color: "var(--danger)", marginTop: "2px" }}>
               Posted by {report.items?.author_name ?? "Unknown"} · {report.items?.author_email ?? ""}
             </p>
           </div>
@@ -507,7 +522,7 @@ function ReportedUsersPanel({ adminEmail }: { adminEmail: string }) {
           <div className="reported-card__body">
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
               <div style={{
-                width: 32, height: 32, borderRadius: "50%", background: "#7c3aed",
+                width: 32, height: 32, borderRadius: "50%", background: "var(--accent)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 color: "#fff", fontWeight: 700, fontSize: 13, flexShrink: 0,
               }}>
@@ -520,7 +535,7 @@ function ReportedUsersPanel({ adminEmail }: { adminEmail: string }) {
               Reported by {report.reporter_name} ({report.reporter_email}) · {new Date(report.created_at).toLocaleDateString()}
             </p>
             {report.reported_user_email && (
-              <p className="reported-card__meta" style={{ color: "#ef4444", marginTop: 2 }}>
+              <p className="reported-card__meta" style={{ color: "var(--danger)", marginTop: 2 }}>
                 User email: {report.reported_user_email}
               </p>
             )}
@@ -602,17 +617,20 @@ function BanManagementPanel({ adminEmail }: { adminEmail: string }) {
         <label className="panel-form__label">User Email</label>
         <input className="panel-form__input" type="email" placeholder="user@school.edu"
           value={email} onChange={(e) => setEmail(e.target.value)} required />
+
         <label className="panel-form__label">Reason</label>
         <textarea className="panel-form__textarea" placeholder="e.g. Spam, abusive messages, false claims..."
           value={reason} onChange={(e) => setReason(e.target.value)} required />
-        <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+
+        <div style={{ display: "flex", gap: "8px", marginBottom: "4px" }}>
           <button type="button"
-            style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1.5px solid #e2e8f0", background: banType === "permanent" ? "#7c3aed" : "#f8fafc", color: banType === "permanent" ? "#fff" : "#1e293b", fontSize: "13px", fontWeight: "600", fontFamily: "Poppins, sans-serif", cursor: "pointer" }}
-            onClick={() => setBanType("permanent")}>🚫 Permanent</button>
+            style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1.5px solid var(--border-input)", background: banType === "permanent" ? "var(--accent)" : "var(--bg-input)", color: banType === "permanent" ? "#fff" : "var(--text-primary)", fontSize: "13px", fontWeight: "600", fontFamily: "Poppins, sans-serif", cursor: "pointer", transition: "all 0.15s ease" }}
+            onClick={() => setBanType("permanent")}>Permanent</button>
           <button type="button"
-            style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1.5px solid #e2e8f0", background: banType === "suspend" ? "#7c3aed" : "#f8fafc", color: banType === "suspend" ? "#fff" : "#1e293b", fontSize: "13px", fontWeight: "600", fontFamily: "Poppins, sans-serif", cursor: "pointer" }}
-            onClick={() => setBanType("suspend")}>⏸ Suspend</button>
+            style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1.5px solid var(--border-input)", background: banType === "suspend" ? "var(--accent)" : "var(--bg-input)", color: banType === "suspend" ? "#fff" : "var(--text-primary)", fontSize: "13px", fontWeight: "600", fontFamily: "Poppins, sans-serif", cursor: "pointer", transition: "all 0.15s ease" }}
+            onClick={() => setBanType("suspend")}>Suspend</button>
         </div>
+
         {banType === "suspend" && (
           <>
             <label className="panel-form__label">Suspend for how many days?</label>
@@ -620,12 +638,15 @@ function BanManagementPanel({ adminEmail }: { adminEmail: string }) {
               value={suspendDays} onChange={(e) => setSuspendDays(e.target.value)} />
           </>
         )}
-        {successMsg && <p style={{ color: "#22c55e", fontSize: "0.85rem", margin: "4px 0" }}>✓ {successMsg}</p>}
+
+        {successMsg && <p style={{ color: "var(--success)", fontSize: "0.85rem", margin: "4px 0", fontFamily: "Poppins, sans-serif" }}>{successMsg}</p>}
         {errorMsg && <p className="admin-login__error">{errorMsg}</p>}
+
         <button type="submit" className="panel-form__submit" disabled={loading}>
           {loading ? "Processing..." : banType === "permanent" ? "Ban User" : "Suspend User"}
         </button>
       </form>
+
       <div className="main-panel-section-title" style={{ marginTop: "1.5rem" }}>Active Bans & Suspensions</div>
       {fetchingList ? (
         <p className="panel-empty">Loading...</p>
@@ -635,20 +656,25 @@ function BanManagementPanel({ adminEmail }: { adminEmail: string }) {
         <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "8px" }}>
           {bannedUsers.map((u) => (
             <div key={u.email} style={{
-              padding: "10px 12px", borderRadius: "10px", background: "var(--card-bg)",
-              border: "1px solid var(--border)", opacity: isActive(u) ? 1 : 0.5,
+              padding: "12px 14px", borderRadius: "10px",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-default)",
+              opacity: isActive(u) ? 1 : 0.5,
               display: "flex", justifyContent: "space-between", alignItems: "center",
+              gap: "12px",
             }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>{u.email}</span>
-                <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>{u.reason}</span>
-                <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
+                <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--text-primary)", fontFamily: "Poppins, sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</span>
+                <span style={{ fontSize: "0.78rem", color: "var(--text-secondary)", fontFamily: "Poppins, sans-serif" }}>{u.reason}</span>
+                <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontFamily: "Poppins, sans-serif" }}>
                   {u.suspended_until ? isActive(u) ? `Suspended until ${new Date(u.suspended_until).toLocaleDateString()}` : "Suspension expired" : "Permanent ban"} · by {u.banned_by}
                 </span>
               </div>
               <button onClick={() => handleUnban(u.email)} style={{
-                padding: "5px 10px", borderRadius: "6px", background: "#ef4444",
+                padding: "5px 12px", borderRadius: "6px", background: "var(--danger)",
                 color: "white", border: "none", cursor: "pointer", fontSize: "0.78rem",
+                fontFamily: "Poppins, sans-serif", fontWeight: 600, flexShrink: 0,
+                transition: "background 0.15s ease",
               }}>Unban</button>
             </div>
           ))}
@@ -941,19 +967,35 @@ export default function DashboardPage() {
                 <label className="panel-form__label">Item Name</label>
                 <input type="text" placeholder={itemNameText} value={newItemName}
                   onChange={(e) => setNewItemName(e.target.value)} required className="panel-form__input" />
+
                 <label className="panel-form__label">Description</label>
                 <textarea placeholder={descriptionText} value={newItemDesc}
                   onChange={(e) => setNewItemDesc(e.target.value)} required className="panel-form__textarea" />
+
                 <label className="panel-form__label">Photo</label>
-                <input type="file" accept="image/*"
+                <label className="panel-form__file-label" htmlFor="found-file-upload">
+                  <span className="panel-form__file-icon">+</span>
+                  <span className="panel-form__file-text">
+                    {selectedFile ? selectedFile.name : "Upload a photo"}
+                  </span>
+                </label>
+                <input
+                  id="found-file-upload"
+                  className="panel-form__file"
+                  type="file"
+                  accept="image/*"
+                  required
                   onChange={(e) => { if (e.target.files?.[0]) setSelectedFile(e.target.files[0]); }}
-                  required className="panel-form__file" />
+                />
+                <p className="panel-form__file-hint">PNG, JPG up to 10MB</p>
+
                 {selectedFile && (
                   <div className="panel-form__preview-wrap">
                     <img src={URL.createObjectURL(selectedFile)} alt="preview" className="panel-form__preview" />
                     <button type="button" className="panel-form__preview-remove" onClick={() => setSelectedFile(null)}>×</button>
                   </div>
                 )}
+
                 <div className="panel-form__actions">
                   <button type="button" className="panel-form__cancel"
                     onClick={() => { setNewItemName(""); setNewItemDesc(""); setSelectedFile(null); setActiveTab("items"); }}>
@@ -979,21 +1021,36 @@ export default function DashboardPage() {
                 <label className="panel-form__label">What did you lose?</label>
                 <input type="text" placeholder="e.g. Black North Face backpack" value={lostItemName}
                   onChange={(e) => setLostItemName(e.target.value)} required className="panel-form__input" />
+
                 <label className="panel-form__label">Description</label>
                 <textarea placeholder="Where did you lose it? Any identifying features?" value={lostItemDesc}
                   onChange={(e) => setLostItemDesc(e.target.value)} required className="panel-form__textarea" />
+
                 <label className="panel-form__label">
                   Photo <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 400 }}>(optional)</span>
                 </label>
-                <input type="file" accept="image/*"
+                <label className="panel-form__file-label" htmlFor="lost-file-upload">
+                  <span className="panel-form__file-icon">+</span>
+                  <span className="panel-form__file-text">
+                    {lostSelectedFile ? lostSelectedFile.name : "Upload a photo (optional)"}
+                  </span>
+                </label>
+                <input
+                  id="lost-file-upload"
+                  className="panel-form__file"
+                  type="file"
+                  accept="image/*"
                   onChange={(e) => { if (e.target.files?.[0]) setLostSelectedFile(e.target.files[0]); }}
-                  className="panel-form__file" />
+                />
+                <p className="panel-form__file-hint">PNG, JPG up to 10MB</p>
+
                 {lostSelectedFile && (
                   <div className="panel-form__preview-wrap">
                     <img src={URL.createObjectURL(lostSelectedFile)} alt="preview" className="panel-form__preview" />
                     <button type="button" className="panel-form__preview-remove" onClick={() => setLostSelectedFile(null)}>×</button>
                   </div>
                 )}
+
                 <div className="panel-form__actions">
                   <button type="button" className="panel-form__cancel"
                     onClick={() => { setLostItemName(""); setLostItemDesc(""); setLostSelectedFile(null); setActiveTab("items"); }}>
@@ -1020,30 +1077,12 @@ export default function DashboardPage() {
             <div style={{
               display: "flex", gap: "8px",
               padding: "16px 20px 0",
-              borderBottom: "1px solid #e8eaf0",
+              borderBottom: "1px solid var(--border-default)",
             }}>
-              <button
-                onClick={() => setReportsTab("items")}
-                style={{
-                  padding: "8px 20px", borderRadius: "8px 8px 0 0",
-                  border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem",
-                  fontFamily: "Poppins, sans-serif",
-                  background: reportsTab === "items" ? "#ef4444" : "var(--bg, #f0f2f8)",
-                  color: reportsTab === "items" ? "#fff" : "#64748b",
-                }}
-              >
+              <button onClick={() => setReportsTab("items")} style={{ padding: "8px 20px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem", fontFamily: "Poppins, sans-serif", background: reportsTab === "items" ? "var(--danger)" : "var(--bg-page)", color: reportsTab === "items" ? "#fff" : "var(--text-muted)", transition: "all 0.15s ease" }}>
                 Reported Items
               </button>
-              <button
-                onClick={() => setReportsTab("users")}
-                style={{
-                  padding: "8px 20px", borderRadius: "8px 8px 0 0",
-                  border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem",
-                  fontFamily: "Poppins, sans-serif",
-                  background: reportsTab === "users" ? "#ef4444" : "var(--bg, #f0f2f8)",
-                  color: reportsTab === "users" ? "#fff" : "#64748b",
-                }}
-              >
+              <button onClick={() => setReportsTab("users")} style={{ padding: "8px 20px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem", fontFamily: "Poppins, sans-serif", background: reportsTab === "users" ? "var(--danger)" : "var(--bg-page)", color: reportsTab === "users" ? "#fff" : "var(--text-muted)", transition: "all 0.15s ease" }}>
                 Reported Users
               </button>
             </div>
@@ -1051,12 +1090,8 @@ export default function DashboardPage() {
               <div className="main-panel-section-title">
                 {reportsTab === "items" ? "Reported Items" : "Reported Users"}
               </div>
-              {reportsTab === "items" && (
-                <ReportedItemsPanel updateItemStatus={updateItemStatus} />
-              )}
-              {reportsTab === "users" && (
-                <ReportedUsersPanel adminEmail={user?.primaryEmailAddress?.emailAddress ?? ""} />
-              )}
+              {reportsTab === "items" && <ReportedItemsPanel updateItemStatus={updateItemStatus} />}
+              {reportsTab === "users" && <ReportedUsersPanel adminEmail={user?.primaryEmailAddress?.emailAddress ?? ""} />}
             </div>
           </>
         ) : null;
@@ -1099,7 +1134,7 @@ export default function DashboardPage() {
       <main className="dashboard-main">
         {isAdmin && (
           <div className="admin-banner">
-            <span className="admin-banner__icon">🔐</span>
+            <span className="admin-banner__icon">*</span>
             <span>Admin mode active — you can delete items and ban users</span>
             <button className="admin-banner__exit"
               onClick={() => {
@@ -1130,11 +1165,11 @@ export default function DashboardPage() {
               )}
             </div>
 
-            <div style={{ display: "flex", gap: "8px", padding: "16px 20px 0", borderBottom: "1px solid var(--border)" }}>
-              <button onClick={() => setBoardTab("found")} style={{ padding: "8px 20px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem", background: boardTab === "found" ? "#f97316" : "var(--bg)", color: boardTab === "found" ? "black" : "var(--text-muted)" }}>
-                Found Items ({filteredItems.filter((inp) => inp.status !== "claimed").length})
+            <div style={{ display: "flex", gap: "8px", padding: "16px 20px 0", borderBottom: "1px solid var(--border-default)" }}>
+              <button onClick={() => setBoardTab("found")} style={{ padding: "8px 20px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem", fontFamily: "Poppins, sans-serif", background: boardTab === "found" ? "#f97316" : "var(--bg-page)", color: boardTab === "found" ? "#fff" : "var(--text-muted)", transition: "all 0.15s ease" }}>
+                Found Items ({filteredItems.filter((i) => i.status !== "claimed").length})
               </button>
-              <button onClick={() => setBoardTab("lost")} style={{ padding: "8px 20px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem", background: boardTab === "lost" ? "#f97316" : "var(--bg)", color: boardTab === "lost" ? "white" : "var(--text-muted)" }}>
+              <button onClick={() => setBoardTab("lost")} style={{ padding: "8px 20px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem", fontFamily: "Poppins, sans-serif", background: boardTab === "lost" ? "#f97316" : "var(--bg-page)", color: boardTab === "lost" ? "#fff" : "var(--text-muted)", transition: "all 0.15s ease" }}>
                 Lost Items ({filteredLostItems.length})
               </button>
             </div>
@@ -1205,7 +1240,7 @@ export default function DashboardPage() {
                         {item.image ? (
                           <img className="item-image" src={item.image} alt={item.name} />
                         ) : (
-                          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", color: "#94a3b8", fontSize: "2.5rem" }}>🔎</div>
+                          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg-input)", color: "var(--text-muted)", fontSize: "2rem", fontFamily: "Poppins, sans-serif" }}>?</div>
                         )}
                       </div>
                       <div className="item-info">

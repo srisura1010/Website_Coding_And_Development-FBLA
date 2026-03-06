@@ -496,3 +496,104 @@ body.colorblind .carousel {
     min-width: 250px;
   }
 }
+
+/* ===== FLOATING ITEMS ===== */
+.floating-items {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;  /* ← was 15 */
+  overflow: hidden;
+}
+
+.floating-item {
+  position: absolute;
+  pointer-events: all;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: floatBob 5s ease-in-out infinite;
+  user-select: none;
+  width: 110px;
+  height: 110px;
+  justify-content: center;
+}
+
+.floating-item img {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  object-position: center;
+  transition: filter 0.2s ease, transform 0.2s ease;
+  filter: drop-shadow(0 4px 12px rgba(47, 128, 237, 0.25));
+  pointer-events: none;
+  display: block;
+}
+
+.floating-item:active {
+  z-index: 20;
+}
+
+.floating-item.hovered img {
+  transform: scale(1.08);
+  filter:
+    drop-shadow(0 0 8px rgba(47, 128, 237, 1))
+    drop-shadow(0 0 20px rgba(47, 128, 237, 0.5));
+}
+
+/* Simple tag — like your reference image */
+.floating-label {
+  position: absolute;
+  bottom: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes floatBob {
+  0%, 100% { transform: translateY(0px) rotate(-1deg); }
+  40%       { transform: translateY(-14px) rotate(1.5deg); }
+  70%       { transform: translateY(6px) rotate(-0.5deg); }
+}
+
+/* Dark mode tag */
+body.dark .floating-label {
+  background: #0f172a;
+  color: #e2e8f0;
+  border: 1.5px solid #334155;
+}
+
+/* Light mode tag */
+body.light .floating-label {
+  background: #1e293b;
+  color: #f8fafc;
+  border: 1.5px solid #475569;
+}
+
+body.high-contrast .floating-label {
+  background: #000;
+  color: #ffff00;
+  border: 1.5px solid #ffff00;
+}
+body.high-contrast .floating-item.hovered img {
+  filter: drop-shadow(0 0 10px #ffff00);
+}
+
+body.colorblind .floating-label {
+  background: #003366;
+  color: #ffdd44;
+  border: 1.5px solid #ffdd44;
+}
+
+@media (max-width: 768px) {
+  .floating-items { display: none; }
+}
