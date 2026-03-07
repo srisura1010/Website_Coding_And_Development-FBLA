@@ -9,6 +9,8 @@ import Link from "next/dist/client/link";
 import { CiSettings } from "react-icons/ci";
 import { useSettings } from "@/context/SettingsContext";
 import { SUPER_ADMINS } from "@/lib/superAdmin";
+import LoadingSpinner from "@/app/components/LoadingSpinner";
+
 
 export default function Navbar() {
   const { isSignedIn, user, isLoaded } = useUser();
@@ -55,18 +57,20 @@ export default function Navbar() {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
-  const [dashboardText, setDashboardText] = useState(() => {
-    if (typeof window !== "undefined") return localStorage.getItem(`nav_dashboard_${language}`) || "Dashboard";
-    return "Dashboard";
-  });
-  const [signUpText, setSignUpText] = useState(() => {
-    if (typeof window !== "undefined") return localStorage.getItem(`nav_signUp_${language}`) || "Sign Up";
-    return "Sign Up";
-  });
-  const [helpText, setHelpText] = useState(() => {
-    if (typeof window !== "undefined") return localStorage.getItem(`nav_help_${language}`) || "Help";
-    return "Help";
-  });
+  // Always initialize with plain defaults — no localStorage on first render.
+  // This ensures server and client produce identical HTML (no hydration mismatch).
+  const [dashboardText, setDashboardText] = useState("Dashboard");
+  const [signUpText, setSignUpText] = useState("Sign Up");
+  const [helpText, setHelpText] = useState("Help");
+
+  // After mount, immediately load cached translations so there's no flash
+  // waiting for the translate API call.
+  useEffect(() => {
+    if (language === "en") return;
+    setDashboardText(localStorage.getItem(`nav_dashboard_${language}`) || "Dashboard");
+    setSignUpText(localStorage.getItem(`nav_signUp_${language}`) || "Sign Up");
+    setHelpText(localStorage.getItem(`nav_help_${language}`) || "Help");
+  }, []);
 
   useEffect(() => {
     if (language === "en") {
