@@ -1728,6 +1728,7 @@ body.dark .report-flag { background: rgba(15,23,42,0.88); }
   .item-info p {
     font-size: 0.76rem;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   .button-group {
