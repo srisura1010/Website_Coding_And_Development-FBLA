@@ -11,6 +11,8 @@ import { getConversationId } from "@/app/components/MessagingSystem";
 import { FaFlag } from "react-icons/fa6";
 import { useRouter } from "next/navigation";
 import { AdminInboxPanel } from "@/app/components/AdminInboxPanel";
+import LoadingSpinner from "@/app/components/LoadingSpinner";
+
 
 interface Message {
   id: number;
@@ -1113,7 +1115,7 @@ export default function DashboardPage() {
     }
   };
 
-  if (!isLoaded || !banChecked || !isReady) return null;
+if (!isLoaded || !banChecked || !isReady) return <LoadingSpinner />;
 
   return (
     <div className="dashboard-layout">

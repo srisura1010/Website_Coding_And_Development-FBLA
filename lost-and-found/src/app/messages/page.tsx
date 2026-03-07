@@ -7,6 +7,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { useSettings } from "@/context/SettingsContext";
 import { FaFlag, FaShieldHalved } from "react-icons/fa6";
+import LoadingSpinner from "@/app/components/LoadingSpinner";
+
 
 interface Message {
   id: number;
@@ -450,7 +452,7 @@ export default function MessagesPage() {
     setReportingUser(false);
   };
 
-  if (!banChecked || !isLoaded || !user || !isReady) return null;
+if (!banChecked || !isLoaded || !user || !isReady) return <LoadingSpinner />;
 
   return (
     <div className="messages-layout">

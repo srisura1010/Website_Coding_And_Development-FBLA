@@ -7,6 +7,8 @@ import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import "./settings.css";
+import LoadingSpinner from "@/app/components/LoadingSpinner";
+
 
 const SettingsPage = () => {
   const { theme, language, setTheme, setLanguage } = useSettings();
@@ -102,7 +104,7 @@ const SettingsPage = () => {
     translateAndCache();
   }, [language]);
 
-  if (!isLoaded || !banChecked || !isReady) return null;
+if (!isLoaded || !banChecked || !isReady) return <LoadingSpinner />;
 
   return (
     <div className="settings-page" id="settings-page">

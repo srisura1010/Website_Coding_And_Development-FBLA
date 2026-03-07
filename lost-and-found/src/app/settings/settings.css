@@ -154,6 +154,7 @@ body.colorblind {
 
 /* ═══════════════════════════════════════════
    PAGE WRAPPER
+   — no transition: avoids dark→light sweep on mount
 ═══════════════════════════════════════════ */
 .settings-page {
   min-height: 100vh;
@@ -162,11 +163,11 @@ body.colorblind {
   justify-content: center;
   align-items: flex-start;
   padding: 60px 20px;
-  transition: background 0.2s ease;
 }
 
 /* ═══════════════════════════════════════════
    MAIN CARD
+   — no transition: avoids dark→light sweep on mount
 ═══════════════════════════════════════════ */
 .settings-card {
   width: 650px;
@@ -177,7 +178,6 @@ body.colorblind {
   padding: 40px;
   box-shadow: var(--card-shadow);
   border: 1px solid var(--border-default);
-  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 
   /* Accent line at top */
   position: relative;

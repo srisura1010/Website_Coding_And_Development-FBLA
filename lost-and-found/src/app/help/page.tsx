@@ -6,6 +6,8 @@ import { useSettings } from "@/context/SettingsContext";
 import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
+import LoadingSpinner from "@/app/components/LoadingSpinner";
+
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -303,7 +305,7 @@ export default function HelpPage() {
     checkBan();
   }, [user]);
 
-  if (!banChecked) return null;
+if (!banChecked) return <LoadingSpinner />;
 
   return (
     <div className="help-page">
