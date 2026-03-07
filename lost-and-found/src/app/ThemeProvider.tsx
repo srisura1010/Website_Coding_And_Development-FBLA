@@ -9,41 +9,51 @@ interface ThemeContextProps {
 }
 
 const ThemeContext = createContext<ThemeContextProps>({
-  theme: "dark",
+  theme: "light",
   setTheme: () => {},
 });
 
+const THEME_STYLES: Record<Theme, { spinner: string; track: string }> = {
+  "light":         { spinner: "#7c3aed", track: "#e8eaf0" },
+  "dark":          { spinner: "#7c3aed", track: "#1e2d45" },
+  "high-contrast": { spinner: "#ffff00", track: "#333300" },
+  "colorblind":    { spinner: "#003366", track: "#bfdbfe" },
+};
+
+function getInitialTheme(): Theme {
+  if (typeof window === "undefined") return "light";
+  return (localStorage.getItem("theme") as Theme) || "light";
+}
+
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setTheme] = useState<Theme>("dark");
+  // Read localStorage synchronously — no flash, no re-render needed
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("theme") as Theme | null;
-    if (saved) setTheme(saved);
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    // Sync body class
     document.body.classList.remove("light", "dark", "high-contrast", "colorblind");
     document.body.classList.add(theme);
-
-    // Sync html data-theme + class (used by the instant CSS in layout <head>)
     document.documentElement.setAttribute("data-theme", theme);
     document.documentElement.classList.remove("light", "dark", "high-contrast", "colorblind");
     document.documentElement.classList.add(theme);
-
     localStorage.setItem("theme", theme);
   }, [theme]);
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
-      {!mounted ? <ThemedLoader /> : children}
+      {/* Show themed spinner only before mount, then render children */}
+      {children}
     </ThemeContext.Provider>
   );
 };
 
-function ThemedLoader() {
+function ThemedLoader({ theme }: { theme: Theme }) {
+  const { spinner, track } = THEME_STYLES[theme] ?? THEME_STYLES["light"];
+
   return (
     <div style={{
       position: "fixed",
@@ -51,17 +61,15 @@ function ThemedLoader() {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      // background is already correct from the <head> styles — just needs to be transparent
-      background: "transparent",
       zIndex: 9999,
     }}>
       <div style={{
-        width: 44,
-        height: 44,
+        width: 40,
+        height: 40,
         borderRadius: "50%",
-        border: "3.5px solid var(--border-default, #1e2d45)",
-        borderTopColor: "var(--accent, #7c3aed)",
-        animation: "spin 0.7s linear infinite",
+        border: `3px solid ${track}`,
+        borderTopColor: spinner,
+        animation: "spin 0.65s linear infinite",
       }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

@@ -17,52 +17,36 @@ interface SettingsContextType {
 
 const SettingsContext = createContext<SettingsContextType | null>(null);
 
+// Read localStorage synchronously so the initial state is already correct —
+// no re-render needed, no flash.
+function getInitial<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  return (localStorage.getItem(key) as T) || fallback;
+}
+
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("light");
-  const [font, setFont] = useState<Font>("sans");
-  const [language, setLanguage] = useState<Language>("en");
-  const [mounted, setMounted] = useState(false);
+  const [theme, setThemeState] = useState<Theme>(() => getInitial("theme", "light"));
+  const [font, setFontState] = useState<Font>(() => getInitial("font", "sans"));
+  const [language, setLanguageState] = useState<Language>(() => getInitial("language", "en"));
 
-  // Load saved settings AFTER mount (prevents hydration errors)
+  // Apply theme class to body whenever theme changes
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") as Theme | null;
-    const savedLanguage = localStorage.getItem("language") as Language | null;
-    const savedFont = localStorage.getItem("font") as Font | null;
-
-    if (savedTheme) setTheme(savedTheme);
-    if (savedLanguage) setLanguage(savedLanguage);
-    if (savedFont) setFont(savedFont);
-
-    setMounted(true);
-  }, []);
-
-  // Apply theme to document
-  useEffect(() => {
-    if (!mounted) return;
-
-    document.body.classList.remove(
-      "light",
-      "dark",
-      "high-contrast",
-      "colorblind"
-    );
-
+    document.body.classList.remove("light", "dark", "high-contrast", "colorblind");
     document.body.classList.add(theme);
-
-    document.documentElement.dataset.theme = theme;
+    document.documentElement.setAttribute("data-theme", theme);
     document.documentElement.dataset.font = font;
-
     localStorage.setItem("theme", theme);
     localStorage.setItem("language", language);
     localStorage.setItem("font", font);
-  }, [theme, font, language, mounted]);
+  }, [theme, font, language]);
 
-  if (!mounted) return null; // Prevent hydration mismatch
+  const setTheme = (t: Theme) => setThemeState(t);
+  const setFont = (f: Font) => setFontState(f);
+  const setLanguage = (l: Language) => setLanguageState(l);
 
+  // No null return — children render immediately with correct initial state
   return (
-    <SettingsContext.Provider
-      value={{ theme, font, language, setTheme, setFont, setLanguage }}
-    >
+    <SettingsContext.Provider value={{ theme, font, language, setTheme, setFont, setLanguage }}>
       {children}
     </SettingsContext.Provider>
   );
