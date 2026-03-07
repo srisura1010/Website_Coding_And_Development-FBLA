@@ -3,50 +3,58 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
 type Theme = "light" | "dark" | "high-contrast" | "colorblind";
-type Font = "sans" | "serif" | "mono";
+type FontSize = "sm" | "md" | "lg" | "xl";
+type FontFamily = "sans" | "serif" | "mono";
 type Language = "en" | "es" | "fr" | "de";
 
 interface SettingsContextType {
   theme: Theme;
-  font: Font;
+  fontSize: FontSize;
+  fontFamily: FontFamily;
   language: Language;
   setTheme: (t: Theme) => void;
-  setFont: (f: Font) => void;
+  setFontSize: (s: FontSize) => void;
+  setFontFamily: (f: FontFamily) => void;
   setLanguage: (l: Language) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | null>(null);
 
-// Read localStorage synchronously so the initial state is already correct —
-// no re-render needed, no flash.
-function getInitial<T>(key: string, fallback: T): T {
+function getInitial<T extends string>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
-  return (localStorage.getItem(key) as T) || fallback;
+  return (localStorage.getItem(key) as T) ?? fallback;
 }
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => getInitial("theme", "light"));
-  const [font, setFontState] = useState<Font>(() => getInitial("font", "sans"));
-  const [language, setLanguageState] = useState<Language>(() => getInitial("language", "en"));
+  const [theme, setTheme] = useState<Theme>("light");
+  const [fontSize, setFontSize] = useState<FontSize>("md");
+  const [fontFamily, setFontFamily] = useState<FontFamily>("sans");
+  const [language, setLanguage] = useState<Language>("en");
 
-  // Apply theme class to body whenever theme changes
+  useEffect(() => {
+    setTheme(getInitial("theme", "light"));
+    setFontSize(getInitial("fontSize", "md"));
+    setFontFamily(getInitial("fontFamily", "sans"));
+    setLanguage(getInitial("language", "en"));
+  }, []);
+
   useEffect(() => {
     document.body.classList.remove("light", "dark", "high-contrast", "colorblind");
     document.body.classList.add(theme);
     document.documentElement.setAttribute("data-theme", theme);
-    document.documentElement.dataset.font = font;
+    document.body.dataset.fontSize = fontSize;
+    document.body.dataset.fontFamily = fontFamily;
+  }, [theme, fontSize, fontFamily]);
+
+  useEffect(() => {
     localStorage.setItem("theme", theme);
+    localStorage.setItem("fontSize", fontSize);
+    localStorage.setItem("fontFamily", fontFamily);
     localStorage.setItem("language", language);
-    localStorage.setItem("font", font);
-  }, [theme, font, language]);
+  }, [theme, fontSize, fontFamily, language]);
 
-  const setTheme = (t: Theme) => setThemeState(t);
-  const setFont = (f: Font) => setFontState(f);
-  const setLanguage = (l: Language) => setLanguageState(l);
-
-  // No null return — children render immediately with correct initial state
   return (
-    <SettingsContext.Provider value={{ theme, font, language, setTheme, setFont, setLanguage }}>
+    <SettingsContext.Provider value={{ theme, fontSize, fontFamily, language, setTheme, setFontSize, setFontFamily, setLanguage }}>
       {children}
     </SettingsContext.Provider>
   );

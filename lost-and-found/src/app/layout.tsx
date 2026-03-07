@@ -4,6 +4,7 @@ import { SettingsProvider } from "@/context/SettingsContext";
 import { TTSProvider } from "@/context/TTSContext";
 import Navbar from "./components/Navbar";
 import { ThemeProvider } from "./ThemeProvider";
+import "./global.css";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

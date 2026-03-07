@@ -9,9 +9,8 @@ import { useRouter } from "next/navigation";
 import "./settings.css";
 import LoadingSpinner from "@/app/components/LoadingSpinner";
 
-
 const SettingsPage = () => {
-  const { theme, language, setTheme, setLanguage } = useSettings();
+  const { theme, language, fontFamily, fontSize, setTheme, setLanguage, setFontFamily, setFontSize } = useSettings();
   const { enabled: ttsEnabled, setEnabled: setTTSEnabled, rate: ttsRate, setRate: setTTSRate } = useTTS();
   const { user, isLoaded } = useUser();
   const router = useRouter();
@@ -30,8 +29,14 @@ const SettingsPage = () => {
   const [disableTTSText, setDisableTTSText] = useState("Disable TTS");
   const [settingsTitleText, setSettingsTitleText] = useState("Settings");
   const [ttsSpeedText, setTTSSpeedText] = useState("Speed");
+  const [fontText, setFontText] = useState("Font");
+  const [fontSizeText, setFontSizeText] = useState("Font Size");
+  const [smallText, setSmallText] = useState("Small");
+  const [mediumText, setMediumText] = useState("Medium");
+  const [largeText, setLargeText] = useState("Large");
+  const [extraLargeText, setExtraLargeText] = useState("Extra Large");
 
-  // ── Ban check — wait for Clerk to finish loading first ──
+  // ── Ban check ──
   useEffect(() => {
     if (!isLoaded) return;
     if (!user) { setBanChecked(true); return; }
@@ -65,6 +70,12 @@ const SettingsPage = () => {
       setEnableTTSText("Enable TTS");
       setDisableTTSText("Disable TTS");
       setTTSSpeedText("Speed");
+      setFontText("Font");
+      setFontSizeText("Font Size");
+      setSmallText("Small");
+      setMediumText("Medium");
+      setLargeText("Large");
+      setExtraLargeText("Extra Large");
       setIsReady(true);
       return;
     }
@@ -81,6 +92,12 @@ const SettingsPage = () => {
         { key: "Enable TTS",      setter: setEnableTTSText,     cacheKey: "settings_enableTTS" },
         { key: "Disable TTS",     setter: setDisableTTSText,    cacheKey: "settings_disableTTS" },
         { key: "Speed",           setter: setTTSSpeedText,      cacheKey: "settings_ttsSpeed" },
+        { key: "Font",            setter: setFontText,          cacheKey: "settings_font" },
+        { key: "Font Size",       setter: setFontSizeText,      cacheKey: "settings_fontSize" },
+        { key: "Small",           setter: setSmallText,         cacheKey: "settings_small" },
+        { key: "Medium",          setter: setMediumText,        cacheKey: "settings_medium" },
+        { key: "Large",           setter: setLargeText,         cacheKey: "settings_large" },
+        { key: "Extra Large",     setter: setExtraLargeText,    cacheKey: "settings_extraLarge" },
       ];
       for (const { key, setter, cacheKey } of translations) {
         const cached = localStorage.getItem(`${cacheKey}_${language}`);
@@ -104,7 +121,7 @@ const SettingsPage = () => {
     translateAndCache();
   }, [language]);
 
-if (!isLoaded || !banChecked || !isReady) return <LoadingSpinner />;
+  if (!isLoaded || !banChecked || !isReady) return <LoadingSpinner />;
 
   return (
     <div className="settings-page" id="settings-page">
@@ -122,6 +139,25 @@ if (!isLoaded || !banChecked || !isReady) return <LoadingSpinner />;
         </section>
 
         <section className="settings-section">
+          <h3>{fontText}</h3>
+          <div className="theme-options">
+            <button className={fontFamily === "sans" ? "active" : ""} onClick={() => setFontFamily("sans")}>Sans-serif</button>
+            <button className={fontFamily === "serif" ? "active" : ""} onClick={() => setFontFamily("serif")}>Serif</button>
+            <button className={fontFamily === "mono" ? "active" : ""} onClick={() => setFontFamily("mono")}>Monospace</button>
+          </div>
+        </section>
+
+        <section className="settings-section">
+          <h3>{fontSizeText}</h3>
+          <div className="theme-options">
+            <button className={fontSize === "sm" ? "active" : ""} onClick={() => setFontSize("sm")}>{smallText}</button>
+            <button className={fontSize === "md" ? "active" : ""} onClick={() => setFontSize("md")}>{mediumText}</button>
+            <button className={fontSize === "lg" ? "active" : ""} onClick={() => setFontSize("lg")}>{largeText}</button>
+            <button className={fontSize === "xl" ? "active" : ""} onClick={() => setFontSize("xl")}>{extraLargeText}</button>
+          </div>
+        </section>
+
+        <section className="settings-section">
           <h3>{languageText}</h3>
           <div className="theme-options">
             <button className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")}>English</button>
@@ -133,7 +169,6 @@ if (!isLoaded || !banChecked || !isReady) return <LoadingSpinner />;
 
         <section className="settings-section">
           <h3>{ttsText}</h3>
-
           <label className="tts-toggle">
             <span>{ttsEnabled ? disableTTSText : enableTTSText}</span>
             <div
@@ -143,7 +178,6 @@ if (!isLoaded || !banChecked || !isReady) return <LoadingSpinner />;
               <div className="toggle-knob" />
             </div>
           </label>
-
           {ttsEnabled && (
             <label className="tts-rate">
               <span>{ttsSpeedText}: {ttsRate}x</span>
