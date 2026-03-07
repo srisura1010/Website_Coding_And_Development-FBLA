@@ -42,8 +42,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     document.body.classList.remove("light", "dark", "high-contrast", "colorblind");
     document.body.classList.add(theme);
     document.documentElement.setAttribute("data-theme", theme);
-    document.body.dataset.fontSize = fontSize;
-    document.body.dataset.fontFamily = fontFamily;
+    document.documentElement.dataset.fontSize = fontSize;
+    document.documentElement.dataset.fontFamily = fontFamily;
   }, [theme, fontSize, fontFamily]);
 
   useEffect(() => {
