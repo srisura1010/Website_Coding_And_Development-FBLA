@@ -9,6 +9,8 @@ import {
   FaShieldAlt,
   FaSlidersH,
   FaSchool,
+  FaEnvelope,
+  FaGithub,
 } from "react-icons/fa";
 import { IoFolder } from "react-icons/io5";
 import { useSettings } from "@/context/SettingsContext";
@@ -347,6 +349,7 @@ export default function Home() {
         ))}
       </div>
 
+      {/* ── HERO ── */}
       <div className="hero-card relative z-[15]">
         <h1>
           <span className="lostHero">{lostText}</span>
@@ -373,6 +376,7 @@ export default function Home() {
         )}
       </div>
 
+      {/* ── CAROUSEL ── */}
       <div className="carousel relative z-10">
         <div className="track">
           <div className="card">
@@ -462,6 +466,137 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* ── HOW IT WORKS ── */}
+      <section className="how-it-works relative z-10">
+        <h2 className="section-title">How Findr Works</h2>
+        <p className="section-subtitle">
+          Three simple steps to reunite students with their belongings.
+        </p>
+        <div className="steps-grid">
+          <div className="step-card">
+            <div className="step-number">01</div>
+            <div className="step-icon">📋</div>
+            <h3 className="step-title">Report It</h3>
+            <p className="step-body">
+              Found something? Submit it in seconds — snap a photo, pick a
+              category, and drop the location. It goes live instantly.
+            </p>
+          </div>
+          <div className="step-connector" aria-hidden="true">→</div>
+          <div className="step-card">
+            <div className="step-number">02</div>
+            <div className="step-icon">🔍</div>
+            <h3 className="step-title">Search & Match</h3>
+            <p className="step-body">
+              Lost something? Browse the board, filter by type and location, or
+              get notified when something matching your item shows up.
+            </p>
+          </div>
+          <div className="step-connector" aria-hidden="true">→</div>
+          <div className="step-card">
+            <div className="step-number">03</div>
+            <div className="step-icon">🤝</div>
+            <h3 className="step-title">Get It Back</h3>
+            <p className="step-body">
+              Message the finder directly through Findr, confirm it's yours, and
+              arrange a pickup — all within the platform.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── STATS BANNER ── */}
+      <section className="stats-banner relative z-10">
+        <div className="stats-grid">
+          <div className="stat-item">
+            <span className="stat-number">3</span>
+            <span className="stat-label">Steps to Recovery</span>
+          </div>
+          <div className="stat-divider" aria-hidden="true" />
+          <div className="stat-item">
+            <span className="stat-number">100%</span>
+            <span className="stat-label">School-Private</span>
+          </div>
+          <div className="stat-divider" aria-hidden="true" />
+          <div className="stat-item">
+            <span className="stat-number">0</span>
+            <span className="stat-label">Bulletin Boards Needed</span>
+          </div>
+          <div className="stat-divider" aria-hidden="true" />
+          <div className="stat-item">
+            <span className="stat-number">∞</span>
+            <span className="stat-label">Items Supported</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA STRIP ── */}
+      <section className="cta-strip relative z-10">
+        <h2 className="cta-title">Ready to find what you lost?</h2>
+        <p className="cta-sub">
+          Join your school community on Findr today — it only takes a moment to
+          sign up.
+        </p>
+        {isSignedIn ? (
+          <button className="cta-btn" onClick={() => router.push("/dashboard")}>
+            Go to Dashboard →
+          </button>
+        ) : (
+          <SignInButton mode="modal">
+            <button className="cta-btn">Get Started →</button>
+          </SignInButton>
+        )}
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer className="site-footer relative z-10">
+        <div className="footer-inner">
+          <div className="footer-brand">
+            <span className="footer-logo">Findr</span>
+            <p className="footer-tagline">
+              Lost & found, built for schools.
+            </p>
+          </div>
+
+          <div className="footer-links">
+            <div className="footer-col">
+              <span className="footer-col-heading">Navigate</span>
+              {isSignedIn ? (
+                <button className="footer-link" onClick={() => router.push("/dashboard")}>Dashboard</button>
+              ) : (
+                <SignInButton mode="modal">
+                  <button className="footer-link">Sign In</button>
+                </SignInButton>
+              )}
+              {isSignedIn ? (
+                <button className="footer-link" onClick={() => router.push("/messages")}>Messages</button>
+              ) : null}
+            </div>
+            <div className="footer-col">
+              <span className="footer-col-heading">Contact</span>
+              <a
+                className="footer-link"
+                href="mailto:srivatsav4ever@gmail.com"
+              >
+                <FaEnvelope style={{ display: "inline", marginRight: 6, fontSize: 12 }} />
+                srivatsav4ever@gmail.com
+              </a>
+              <a
+                className="footer-link"
+                href="mailto:bavu.ramki@gmail.com"
+              >
+                <FaEnvelope style={{ display: "inline", marginRight: 6, fontSize: 12 }} />
+                bavu.ramki@gmail.com
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div className="footer-bottom">
+          <span>© {new Date().getFullYear()} Findr. Built for students, by students.</span>
+        </div>
+      </footer>
     </div>
   );
 }
