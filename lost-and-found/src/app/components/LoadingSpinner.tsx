@@ -6,12 +6,11 @@ import "./LoadingSpinner.css";
 const LoadingSpinner = () => {
   return (
     <div className="spinner-overlay">
-      <div className="spinner-ring">
-        <div />
-        <div />
-        <div />
-        <div />
-      </div>
+      <img
+        src="/loading.gif"
+        alt="Loading..."
+        className="spinner-gif"
+      />
     </div>
   );
 };
