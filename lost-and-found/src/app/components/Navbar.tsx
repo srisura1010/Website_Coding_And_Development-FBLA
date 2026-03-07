@@ -9,7 +9,6 @@ import Link from "next/dist/client/link";
 import { CiSettings } from "react-icons/ci";
 import { useSettings } from "@/context/SettingsContext";
 import { SUPER_ADMINS } from "@/lib/superAdmin";
-import LoadingSpinner from "@/app/components/LoadingSpinner";
 
 
 export default function Navbar() {
@@ -17,12 +16,19 @@ export default function Navbar() {
   const { language } = useSettings();
   const router = useRouter();
 
+  const [mounted, setMounted] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const isSuperAdmin = isLoaded && SUPER_ADMINS.includes(
+  // Only evaluate auth-dependent values after mount to prevent hydration mismatch
+  const isSuperAdmin = mounted && isLoaded && SUPER_ADMINS.includes(
     user?.primaryEmailAddress?.emailAddress ?? ""
   );
+  const showSignedIn = mounted && isSignedIn;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Close sidebar on route change
   const navigate = (path: string) => {
@@ -116,7 +122,7 @@ export default function Navbar() {
             </Link>
           </li>
           <li>
-            {isSignedIn ? (
+            {showSignedIn ? (
               <button className="dashboard-link" onClick={() => router.push("/dashboard")}>
                 {dashboardText}
               </button>
@@ -126,7 +132,7 @@ export default function Navbar() {
               </SignInButton>
             )}
           </li>
-          {isSignedIn && (
+          {showSignedIn && (
             <li className="messages-nav-item">
               <button
                 className="dashboard-link"
@@ -151,7 +157,7 @@ export default function Navbar() {
               </button>
             </li>
           )}
-          {isSignedIn ? (
+          {showSignedIn ? (
             <li><UserButton /></li>
           ) : (
             <li>
@@ -164,7 +170,7 @@ export default function Navbar() {
 
         {/* ── Mobile: right side (user button + hamburger) ── */}
         <div className="navbar-mobile-right">
-          {isSignedIn && <UserButton />}
+          {showSignedIn && <UserButton />}
           <button
             className="navbar-hamburger"
             onClick={() => setMobileOpen((v) => !v)}
@@ -197,7 +203,7 @@ export default function Navbar() {
         </div>
 
         <nav className="mobile-sidebar__nav">
-          {isSignedIn ? (
+          {showSignedIn ? (
             <button className="mobile-sidebar__item" onClick={() => navigate("/dashboard")}>
               {dashboardText}
             </button>
@@ -209,7 +215,7 @@ export default function Navbar() {
             </SignInButton>
           )}
 
-          {isSignedIn && (
+          {showSignedIn && (
             <button
               className="mobile-sidebar__item messages-nav-item"
               onClick={() => { setUnreadCount(0); navigate("/messages"); }}
@@ -239,7 +245,7 @@ export default function Navbar() {
             Settings
           </button>
 
-          {!isSignedIn && (
+          {!showSignedIn && (
             <SignUpButton>
               <button className="mobile-sidebar__signup" onClick={() => setMobileOpen(false)}>
                 {signUpText}
