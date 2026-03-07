@@ -46,30 +46,30 @@ body.light {
 }
 
 /* ═══════════════════════════════════════════
-   DARK MODE
+   DARK MODE — blues from landing page
 ═══════════════════════════════════════════ */
 body.dark {
-  --bg-page:         #0b1120;
-  --bg-sidebar:      #0f1729;
+  --bg-page:         #0f172a;
+  --bg-sidebar:      #0f172a;
   --bg-card:         #131d30;
   --bg-input:        #1a2540;
   --bg-chip:         #1a2540;
   --bg-hover:        #1e2d45;
-  --bg-active-tab:   #1e1545;
+  --bg-active-tab:   #0d1f3c;
 
-  --border-default:  #1e2d45;
-  --border-input:    #253352;
-  --border-focus:    #7c3aed;
+  --border-default:  #1e3a8a;
+  --border-input:    #2353d7;
+  --border-focus:    #2f80ed;
 
   --text-primary:    #e8edf5;
   --text-secondary:  #8899bb;
   --text-muted:      #4a5a7a;
-  --text-active-tab: #a78bfa;
+  --text-active-tab: #6789f8;
 
-  --accent:          #7c3aed;
-  --accent-hover:    #8b5cf6;
-  --accent-light:    #1e1545;
-  --accent-border:   #3d2080;
+  --accent:          #2f80ed;
+  --accent-hover:    #3aa0ff;
+  --accent-light:    #0d1f3c;
+  --accent-border:   #2353d7;
 
   --success:         #10b981;
   --success-hover:   #059669;
@@ -79,14 +79,14 @@ body.dark {
   --warning-text:    #0f1111;
 
   --sidebar-shadow:  2px 0 24px rgba(0,0,0,0.4);
-  --card-shadow:     0 2px 16px rgba(0,0,0,0.3);
-  --card-hover-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  --card-shadow:     0 2px 16px rgba(35,83,215,0.15);
+  --card-hover-shadow: 0 0 20px rgba(35,83,215,0.35), 0 0 40px rgba(35,83,215,0.15);
 
-  --chip-hover-bg:   #1e1545;
-  --chip-hover-border: #5b21b6;
+  --chip-hover-bg:   #0d1f3c;
+  --chip-hover-border: #2353d7;
 
-  --scrollbar-track: #0f1729;
-  --scrollbar-thumb: #253352;
+  --scrollbar-track: #0f172a;
+  --scrollbar-thumb: #1e3a8a;
 }
 
 /* ═══════════════════════════════════════════

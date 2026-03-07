@@ -5,40 +5,40 @@
 ═══════════════════════════════════════════ */
 :root,
 body.dark {
-  --msg-bg-page:       #0b1120;
-  --msg-bg-sidebar:    #0f1729;
+  --msg-bg-page:       #0f172a;
+  --msg-bg-sidebar:    #0f172a;
   --msg-bg-card:       #131d30;
   --msg-bg-input:      #1a2540;
   --msg-bg-hover:      #1e2d45;
-  --msg-bg-active:     #162035;
-  --msg-bg-chat:       #0d1828;
-  --msg-bg-header:     #0f1729;
-  --msg-bg-bubble-own: #7c3aed;
+  --msg-bg-active:     #0d1f3c;
+  --msg-bg-chat:       #0f172a;
+  --msg-bg-header:     #0f172a;
+  --msg-bg-bubble-own: #2f80ed;
   --msg-bg-bubble-other: #1a2540;
 
-  --msg-border:        #1e2d45;
-  --msg-border-active: #7c3aed;
-  --msg-border-input:  #253352;
+  --msg-border:        #1e3a8a;
+  --msg-border-active: #2f80ed;
+  --msg-border-input:  #2353d7;
 
   --msg-text-primary:  #e8edf5;
   --msg-text-secondary:#8899bb;
   --msg-text-muted:    #4a5a7a;
-  --msg-text-active:   #a78bfa;
+  --msg-text-active:   #6789f8;
 
-  --msg-accent:        #7c3aed;
-  --msg-accent-light:  #1e1545;
+  --msg-accent:        #2f80ed;
+  --msg-accent-light:  #0d1f3c;
   --msg-accent-blue:   #2563eb;
   --msg-accent-blue-light: #0d1f3c;
 
-  --msg-unread-dot:    #7c3aed;
-  --msg-admin-grad:    linear-gradient(135deg, #2563eb, #7c3aed);
-  --msg-avatar-bg:     #7c3aed;
+  --msg-unread-dot:    #2f80ed;
+  --msg-admin-grad:    linear-gradient(135deg, #2563eb, #2f80ed);
+  --msg-avatar-bg:     #2f80ed;
 
-  --msg-send-active:   #7c3aed;
-  --msg-send-inactive: #253352;
+  --msg-send-active:   #2f80ed;
+  --msg-send-inactive: #1e3a8a;
   --msg-send-icon-inactive: #4a5a7a;
 
-  --msg-shadow-bubble: 0 2px 8px rgba(124,58,237,0.25);
+  --msg-shadow-bubble: 0 2px 8px rgba(35,83,215,0.35);
   --msg-shadow-other:  0 1px 4px rgba(0,0,0,0.3);
 }
 
