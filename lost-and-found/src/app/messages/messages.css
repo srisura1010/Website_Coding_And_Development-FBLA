@@ -165,6 +165,7 @@ body.colorblind {
   font-family: "Poppins", sans-serif;
   background: var(--msg-bg-page);
   transition: background 0.2s ease;
+  overflow: hidden;
 }
 
 /* ═══════════════════════════════════════════
@@ -438,6 +439,28 @@ body.high-contrast .messages-conv-avatar {
   font-family: "Ubuntu", sans-serif;
 }
 
+/* Back button — hidden on desktop, shown on mobile */
+.messages-chat__back {
+  display: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--msg-bg-hover);
+  border: none;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  color: var(--msg-text-secondary);
+  font-size: 18px;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.messages-chat__back:active {
+  background: var(--msg-accent-light);
+  color: var(--msg-accent);
+}
+
 /* Report button */
 .msg-report-btn {
   display: flex;
@@ -633,7 +656,7 @@ body.high-contrast .messages-chat__send--active {
 }
 
 /* ═══════════════════════════════════════════
-   REPORT MODAL (reusing dashboard classes)
+   REPORT MODAL
 ═══════════════════════════════════════════ */
 .report-modal-overlay {
   position: fixed;
@@ -773,7 +796,7 @@ body.high-contrast .report-modal__submit {
   color: #22c55e;
 }
 
-/* Contact admin modal list items */
+/* Contact admin modal */
 .admin-select-btn {
   display: flex;
   align-items: center;
@@ -846,17 +869,94 @@ body.high-contrast .admin-select-avatar {
 }
 
 /* ═══════════════════════════════════════════
-   MOBILE
+   MOBILE  (≤ 640px)
+   Pattern: sidebar fills screen by default.
+   When a conversation is open, chat slides
+   over the top (position: absolute, full size).
 ═══════════════════════════════════════════ */
 @media (max-width: 640px) {
-  .messages-sidebar {
-    width: 100%;
-    position: absolute;
-    z-index: 10;
-    height: 100%;
+
+  .messages-layout {
+    position: relative;
+    overflow: hidden;
   }
 
-  .messages-chat {
+  /* Sidebar takes full width, always rendered */
+  .messages-sidebar {
     width: 100%;
+    flex-shrink: 0;
+    border-right: none;
+  }
+
+  /* Chat pane sits on top of the sidebar when active */
+  .messages-chat {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    /* Hidden by default — slid off to the right */
+    transform: translateX(100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 20;
+  }
+
+  /* When a conversation is selected, slide chat in */
+  .messages-chat--open {
+    transform: translateX(0);
+  }
+
+  /* Show the back button on mobile */
+  .messages-chat__back {
+    display: flex;
+  }
+
+  /* Slightly larger touch targets for conv rows */
+  .messages-conv-row {
+    padding: 16px;
+  }
+
+  /* Prevent iOS zoom on textarea focus */
+  .messages-chat__textarea {
+    font-size: 16px;
+  }
+
+  /* Report modal slides up from bottom on mobile */
+  .report-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .report-modal {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    padding: 20px 20px 32px;
+  }
+
+  /* Drag handle pill on bottom-sheet modals */
+  .report-modal::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--msg-border);
+    margin: 0 auto 16px;
+  }
+
+  /* Slightly tighter header on mobile */
+  .messages-chat__header {
+    padding: 12px 14px;
+  }
+
+  /* Make send button a touch-friendly size */
+  .messages-chat__send {
+    width: 42px;
+    height: 42px;
+    font-size: 20px;
+  }
+
+  /* Bottom padding so content clears the device home indicator */
+  .messages-chat__input-row {
+    padding: 10px 12px 20px;
   }
 }

@@ -444,6 +444,12 @@ export default function MessagesPage() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
+  // Close chat pane on mobile and return to sidebar
+  const handleBack = () => {
+    setActiveConvId(null);
+    setReportingUser(false);
+  };
+
   if (!banChecked || !isLoaded || !user || !isReady) return null;
 
   return (
@@ -505,8 +511,10 @@ export default function MessagesPage() {
         </div>
       </div>
 
-      {/* ── Chat area ── */}
-      <div className="messages-chat">
+      {/* ── Chat area ──
+          On mobile: slides over sidebar when activeConvId is set (.messages-chat--open)
+      ── */}
+      <div className={`messages-chat${activeConvId ? " messages-chat--open" : ""}`}>
         {!activeConvId ? (
           <div className="messages-chat__empty">
             <div className="messages-chat__empty-icon">💬</div>
@@ -516,6 +524,11 @@ export default function MessagesPage() {
           <>
             {/* Header */}
             <div className="messages-chat__header">
+              {/* Back button — only visible on mobile via CSS */}
+              <button className="messages-chat__back" onClick={handleBack} aria-label="Back to conversations">
+                ←
+              </button>
+
               <div className={`messages-conv-avatar${activeConv?.isAdminConv ? " messages-conv-avatar--admin" : ""}`}>
                 {activeConv?.isAdminConv
                   ? <FaShieldHalved style={{ fontSize: 14 }} />
